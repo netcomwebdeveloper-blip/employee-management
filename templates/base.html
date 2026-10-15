@@ -25,7 +25,7 @@
           <span class="nav-icon">📊</span>
           <span>Dashboard</span>
         </a>
-        {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
+        {% if current_profile.role == 'ADMIN' or request.user.is_superuser %}
         <a href="{% url 'dashboard:hr_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'hr_dashboard' %}active{% endif %}">
           <span class="nav-icon">👔</span>
           <span>HR Operations</span>
