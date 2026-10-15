@@ -104,7 +104,9 @@
               <a href="{% url 'employees:detail' emp.id %}" class="btn btn-outline btn-sm" title="View Dossier">👁️</a>
               <a href="{% url 'employees:edit' emp.id %}" class="btn btn-outline btn-sm" title="Edit">✏️</a>
               {% if emp.user.username != 'NETCOM' and not emp.user.is_superuser and emp.user != request.user %}
-                {% if current_profile.role == 'ADMIN' or request.user.is_superuser or (current_profile.role == 'HR' and emp.role != 'ADMIN') %}
+                {% if current_profile.role == 'ADMIN' or request.user.is_superuser %}
+                <a href="{% url 'employees:delete' emp.id %}" class="btn btn-danger btn-sm" title="Delete Employee" onclick="return confirm('Permanently delete {{ emp.display_name }}?');">🗑️</a>
+                {% elif current_profile.role == 'HR' and emp.role != 'ADMIN' %}
                 <a href="{% url 'employees:delete' emp.id %}" class="btn btn-danger btn-sm" title="Delete Employee" onclick="return confirm('Permanently delete {{ emp.display_name }}?');">🗑️</a>
                 {% endif %}
               {% endif %}
