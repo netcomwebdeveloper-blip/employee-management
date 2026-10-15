@@ -4,7 +4,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable
 )
 from reportlab.pdfgen import canvas
 
@@ -29,17 +29,15 @@ class NumberedCanvas(canvas.Canvas):
         self.saveState()
         self.setFont("Helvetica", 8)
         self.setFillColor(colors.HexColor("#6b7280"))
-        # Header (pages > 1)
         if self._pageNumber > 1:
-            self.drawString(54, 11 * inch - 36, "Django Employee Management System Pro — Operational Guide")
+            self.drawString(54, 11 * inch - 36, "Netcom Computers Pvt Ltd — Technical, Operations & Administration Manual")
             self.setStrokeColor(colors.HexColor("#e5e7eb"))
             self.setLineWidth(0.5)
             self.line(54, 11 * inch - 42, 8.5 * inch - 54, 11 * inch - 42)
 
-        # Footer
         footer_text = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(8.5 * inch - 54, 30, footer_text)
-        self.drawString(54, 30, "Confidential & Proprietary • Automated Documentation")
+        self.drawString(54, 30, "Netcom Computers Pvt Ltd • Confidential & Proprietary Documentation")
         self.setStrokeColor(colors.HexColor("#e5e7eb"))
         self.setLineWidth(0.5)
         self.line(54, 42, 8.5 * inch - 54, 42)
@@ -58,54 +56,40 @@ def build_guide_pdf(filename="HOW_TO_RUN_PROJECT.pdf"):
 
     styles = getSampleStyleSheet()
 
-    # Custom palette
-    primary_color = colors.HexColor("#0f62fe")
-    secondary_color = colors.HexColor("#7c3aed")
-    dark_text = colors.HexColor("#111827")
+    primary_color = colors.HexColor("#1e40af")
+    secondary_color = colors.HexColor("#3b82f6")
+    dark_text = colors.HexColor("#0f172a")
+    border_color = colors.HexColor("#cbd5e1")
     gray_bg = colors.HexColor("#f8fafc")
-    border_color = colors.HexColor("#e2e8f0")
-    success_color = colors.HexColor("#16a34a")
 
     title_style = ParagraphStyle(
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=24,
-        leading=28,
+        fontSize=20,
+        leading=24,
         textColor=primary_color,
-        spaceAfter=6
+        spaceAfter=3
     )
 
     subtitle_style = ParagraphStyle(
         'DocSubTitle',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=12,
-        leading=16,
-        textColor=colors.HexColor("#4b5563"),
-        spaceAfter=15
+        fontSize=9.5,
+        leading=13,
+        textColor=colors.HexColor("#475569"),
+        spaceAfter=8
     )
 
     h1_style = ParagraphStyle(
         'SectionH1',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=15,
-        leading=19,
-        textColor=primary_color,
-        spaceBefore=14,
-        spaceAfter=8,
-        keepWithNext=True
-    )
-
-    h2_style = ParagraphStyle(
-        'SectionH2',
-        parent=styles['Heading2'],
-        fontName='Helvetica-Bold',
-        fontSize=11,
+        fontSize=11.5,
         leading=15,
-        textColor=secondary_color,
-        spaceBefore=10,
+        textColor=primary_color,
+        spaceBefore=8,
         spaceAfter=4,
         keepWithNext=True
     )
@@ -114,383 +98,335 @@ def build_guide_pdf(filename="HOW_TO_RUN_PROJECT.pdf"):
         'BodyDark',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9.5,
-        leading=13.5,
+        fontSize=8,
+        leading=11.5,
         textColor=dark_text,
-        spaceAfter=6
+        spaceAfter=4
     )
 
     code_style = ParagraphStyle(
         'CodeSnippet',
         parent=styles['Code'],
         fontName='Courier',
-        fontSize=8.5,
-        leading=12,
+        fontSize=7,
+        leading=9.5,
         textColor=colors.HexColor("#1e293b"),
         backColor=colors.HexColor("#f1f5f9"),
-        borderPadding=6,
-        spaceBefore=4,
-        spaceAfter=6
+        borderPadding=4,
+        spaceBefore=2,
+        spaceAfter=4
     )
 
-    table_header_style = ParagraphStyle(
-        'TableHeader',
-        fontName='Helvetica-Bold',
-        fontSize=9,
-        leading=11,
-        textColor=colors.white
-    )
-
-    table_cell_style = ParagraphStyle(
-        'TableCell',
-        fontName='Helvetica',
-        fontSize=8.5,
-        leading=11,
-        textColor=dark_text
-    )
-
-    table_cell_bold = ParagraphStyle(
-        'TableCellBold',
-        fontName='Helvetica-Bold',
-        fontSize=8.5,
-        leading=11,
-        textColor=dark_text
-    )
+    table_header_style = ParagraphStyle('TH', fontName='Helvetica-Bold', fontSize=7.5, leading=9.5, textColor=colors.white)
+    table_cell_style = ParagraphStyle('TC', fontName='Helvetica', fontSize=7, leading=9, textColor=dark_text)
+    table_cell_bold = ParagraphStyle('TCB', fontName='Helvetica-Bold', fontSize=7, leading=9, textColor=dark_text)
 
     story = []
 
-    # Title & Header Banner
-    story.append(Paragraph("Django Employee Management System Pro", title_style))
-    story.append(Paragraph("Complete Setup, Execution, Architecture & Troubleshooting Manual", subtitle_style))
-    story.append(HRFlowable(width="100%", thickness=2, color=primary_color, spaceBefore=0, spaceAfter=12))
+    # Title Banner
+    story.append(Paragraph("Netcom Computers Pvt Ltd", title_style))
+    story.append(Paragraph("Enterprise Employee Management Pro — Operations, Biometrics, Admin Punch, 1-Day Monthly Casual Leave & Deployment Manual", subtitle_style))
+    story.append(HRFlowable(width="100%", thickness=2, color=primary_color, spaceBefore=0, spaceAfter=6))
 
     # Meta Info Card
     meta_data = [
         [
-            Paragraph("<b>Framework:</b> Django 5.0.6 (Python 3.12)", table_cell_style),
-            Paragraph("<b>Database:</b> SQLite3 (Zero Config)", table_cell_style),
-            Paragraph("<b>Status:</b> Production Ready & Tested", table_cell_style)
+            Paragraph("<b>Company:</b> Netcom Computers Pvt Ltd", table_cell_style),
+            Paragraph("<b>Database:</b> MySQL 8.0 + SQLite zero-friction fallback", table_cell_style),
+            Paragraph("<b>Biometrics:</b> Realtime TCP/UDP Port 4370 Sync", table_cell_style)
         ],
         [
-            Paragraph("<b>Architecture:</b> MVC / Role-Based Portals", table_cell_style),
-            Paragraph("<b>Default Host:</b> 127.0.0.1:8000", table_cell_style),
-            Paragraph("<b>Test Suite:</b> 8 Automated Tests (Pass)", table_cell_style)
+            Paragraph("<b>Host:</b> 0.0.0.0:8000 (Local & LAN Access)", table_cell_style),
+            Paragraph("<b>Login Route:</b> /login/ (Strictly Preserved)", table_cell_style),
+            Paragraph("<b>Test Suite:</b> 32 Automated Tests (100% Pass)", table_cell_style)
         ]
     ]
-    meta_table = Table(meta_data, colWidths=[170, 170, 164])
+    meta_table = Table(meta_data, colWidths=[175, 175, 154])
     meta_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+        ('BACKGROUND', (0, 0), (-1, -1), gray_bg),
         ('BOX', (0, 0), (-1, -1), 1, border_color),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, border_color),
-        ('PADDING', (0, 0), (-1, -1), 6),
+        ('PADDING', (0, 0), (-1, -1), 3),
     ]))
     story.append(meta_table)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 4))
 
-    # Section 1: Quick Start Instructions
-    story.append(Paragraph("1. Quick Start Guide (Windows / Linux / macOS)", h1_style))
+    # Section 1: Role-Based Access & Dashboards
+    story.append(Paragraph("1. System Dashboards, Duty Punch Terminals & Security Protections", h1_style))
     story.append(Paragraph(
-        "To get the project running immediately, execute the following steps from your command line terminal in the project directory:",
+        "• <b>Netcom Employee Dashboard:</b> Hero banner with profile picture avatar, login popup announcement with close button, photo + GPS attendance punch (strict once-per-day enforcement with button lock), personal calendar (strictly isolated to employee's own records), 4-record scroll containers.<br/>"
+        "• <b>Netcom HR Dashboard:</b> Leave review modal (Casual vs Sick Leave), daily work planning & staff notifications, comprehensive report downloads (PDF & Excel), HR self-service duty punch terminal, employee details with password toggle (👁️), document links (📄 View Doc), employee delete button, and 5-record scroll containers.<br/>"
+        "• <b>Netcom Admin Dashboard:</b> Administrator Duty Punch Terminal (webcam photo + GPS verification, real-time clock, instant punch in/out), full workforce governance, banner & popup image management, employee details with password reveal, submitted document inspection, biometric device sync, 10-record scroll containers.<br/>"
+        "• <b>Permanent Protection for Main Admin (NETCOM):</b> The main admin user <code>NETCOM</code> and superusers can NEVER be deleted. Delete buttons are completely hidden on frontend, and backend blocks deletion with an error.<br/>"
+        "• <b>Strict Access Enforcement:</b> HR users are completely blocked from accessing Admin pages (<code>/dashboard/admin/</code>) via backend <code>@admin_required</code>.",
         body_style
     ))
+    story.append(Spacer(1, 4))
 
-    cmd_box = """# Step 1: Open Terminal in Project Root
-cd D:\\employee_management\\django_employee_management_pro
-
-# Step 2: (Optional) Activate Virtual Environment
-.\\venv\\Scripts\\activate          # Windows PowerShell / CMD
-# or source venv/bin/activate      # Linux / Mac
-
-# Step 3: Run Database Migrations
-python manage.py migrate
-
-# Step 4: Populate Initial Demo Accounts (Admin, HR, Employee)
-python manage.py create_demo_users
-
-# Step 5: Start the Development Server
-python manage.py runserver"""
-    story.append(Paragraph(cmd_box.replace("\n", "<br/>").replace(" ", "&nbsp;"), code_style))
-
-    story.append(Paragraph(
-        "Once started, open your web browser and navigate to: <b><u>http://127.0.0.1:8000/</u></b>",
-        body_style
-    ))
-
-    # One click runner tip
-    tip_data = [[
-        Paragraph(
-            "<b>Convenient Windows Batch Launcher:</b> Double-click <b><code>run_server.bat</code></b> "
-            "located in the project root directory. It automatically runs migrations, verifies demo credentials, "
-            "and starts the server in one click.",
-            table_cell_style
-        )
-    ]]
-    tip_table = Table(tip_data, colWidths=[504])
-    tip_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#eff6ff")),
-        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#93c5fd")),
-        ('PADDING', (0, 0), (-1, -1), 8),
-    ]))
-    story.append(tip_table)
-    story.append(Spacer(1, 12))
-
-    # Section 2: Default Demo Credentials & Roles
-    story.append(Paragraph("2. Default Login Credentials & Access Control", h1_style))
-    story.append(Paragraph(
-        "The project comes pre-configured with three role tiers. Each user role automatically routes to its dedicated dashboard upon login:",
-        body_style
-    ))
-
-    cred_headers = [
-        Paragraph("Role", table_header_style),
-        Paragraph("Username", table_header_style),
-        Paragraph("Password", table_header_style),
-        Paragraph("Employee Code", table_header_style),
-        Paragraph("Accessible Features", table_header_style),
-    ]
-    cred_rows = [
-        cred_headers,
+    # Section 2: Leave Review Classification & Casual Leave Restoration
+    story.append(Paragraph("2. Leave Review, Office Paid Leave & Attendance Engine", h1_style))
+    leave_rules = [
         [
-            Paragraph("<b>Admin</b>", table_cell_bold),
-            Paragraph("<code>admin</code>", table_cell_style),
-            Paragraph("<code>admin12345</code>", table_cell_style),
-            Paragraph("ADM001", table_cell_style),
-            Paragraph("Create/delete users, view all work logs, approve/reject leaves, Django Admin", table_cell_style),
+            Paragraph("Leave Action / Event", table_header_style),
+            Paragraph("Review / Type", table_header_style),
+            Paragraph("Balance Impact", table_header_style),
+            Paragraph("Salary & Calendar Synchronization", table_header_style)
         ],
         [
-            Paragraph("<b>HR</b>", table_cell_bold),
+            Paragraph("<b>Employee Applies for Leave</b>", table_cell_bold),
+            Paragraph("Triggers HR Notification", table_cell_style),
+            Paragraph("Balance held pending", table_cell_style),
+            Paragraph("Appears in HR Leave Requests; displayed on calendar with yellow pending border.", table_cell_style)
+        ],
+        [
+            Paragraph("<b>Approved: Paid Casual Leave</b>", table_cell_bold),
+            Paragraph("Paid Casual Leave", table_cell_style),
+            Paragraph("-1 Casual Leave Day", table_cell_bold),
+            Paragraph("<b>Zero salary deduction.</b> Displayed with <b>GREEN border</b> on calendar & dashboard.", table_cell_bold)
+        ],
+        [
+            Paragraph("<b>Approved: Paid Sick Leave</b>", table_cell_bold),
+            Paragraph("Paid Sick Leave", table_cell_style),
+            Paragraph("<b>Zero casual deduction</b>", table_cell_bold),
+            Paragraph("<b>Zero salary deduction.</b> Displayed with <b>GREEN border</b> on calendar & dashboard.", table_cell_bold)
+        ],
+        [
+            Paragraph("<b>Mark Paid Leave for Office</b>", table_cell_bold),
+            Paragraph("Office-Wide Holiday", table_cell_style),
+            Paragraph("<b>0 deduction from casual balance</b>", table_cell_bold),
+            Paragraph("<b>Full pay (zero salary deduction).</b> Calendar highlights date with purple badge & tooltips.", table_cell_bold)
+        ],
+        [
+            Paragraph("<b>Rejected Leave Request</b>", table_cell_bold),
+            Paragraph("Rejected with reason", table_cell_style),
+            Paragraph("Zero balance deduction", table_cell_style),
+            Paragraph("<b>Displayed in RED on employee calendar</b> with clear rejection reason.", table_cell_bold)
+        ],
+        [
+            Paragraph("<b>Casual Leave Restoration</b>", table_cell_bold),
+            Paragraph("Auto-triggered on Punch/Biometric", table_cell_style),
+            Paragraph("<b>+1 Casual Leave Day restored</b>", table_cell_bold),
+            Paragraph("<b>Leave cancelled</b>, attendance marked Present/Half Day, audit log saved.", table_cell_bold)
+        ],
+        [
+            Paragraph("<b>Strict Once-Per-Day Punch</b>", table_cell_bold),
+            Paragraph("Backend & JS Button Lock", table_cell_style),
+            Paragraph("N/A", table_cell_style),
+            Paragraph("Blocks duplicates with exact messages: <i>'You have already punched in/out for today.'</i>", table_cell_bold)
+        ]
+    ]
+    leave_table = Table(leave_rules, colWidths=[120, 115, 105, 164])
+    leave_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e293b")),
+        ('GRID', (0, 0), (-1, -1), 0.5, border_color),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, gray_bg]),
+        ('PADDING', (0, 0), (-1, -1), 3),
+    ]))
+    story.append(leave_table)
+    story.append(Spacer(1, 4))
+
+    # Section 3: Daily Work Planning, Notifications & Comprehensive HR Reporting
+    story.append(Paragraph("3. Daily Work Planning, Profile Pictures, Passwords & HR Reporting", h1_style))
+    story.append(Paragraph(
+        "• <b>HR & Admin Password Inspection:</b> Authorized Admin and HR users can inspect employee login passwords via interactive <code>👁️</code> Show/Hide toggle buttons across all employee management tables, edit modals, and profile dossiers.<br/>"
+        "• <b>Profile Pictures & Document Repository:</b> Profile picture uploaded during employee onboarding is rendered directly across dashboard hero headers, sidebar avatars, and directories. Submitted proof documents can be previewed or downloaded anytime by HR and Admin via <code>📄 View Doc</code> links.<br/>"
+        "• <b>Calendar Isolation:</b> Employees can strictly view only their own attendance calendar. HR and Admin can select any user (Employee, HR, Admin) to view their full month calendar.<br/>"
+        "• <b>Office Paid Leave Scheduling:</b> HR and Admin can select any date on their dashboard calendar to mark an official Paid Leave for the Office.<br/>"
+        "• <b>Employee Daily Work Planning:</b> HR users schedule next-day tasks, set dates, and send direct dashboard notifications to specific employees.<br/>"
+        "• <b>Comprehensive HR Report Export:</b> HR users select any date range and download full HR data (directory, attendance, leaves, balances, and daily work) in both <b>Excel (.xlsx)</b> and <b>PDF</b> formats.<br/>"
+        "• <b>Login Route Integrity:</b> Login URL <code>/login/</code> is strictly preserved with clean layout and 'Employee Management Portal' title.",
+        body_style
+    ))
+    story.append(Spacer(1, 4))
+
+    # Section 4: Authorized Credentials
+    story.append(Paragraph("4. Authorized Access Credentials", h1_style))
+    cred_data = [
+        [
+            Paragraph("Role", table_header_style),
+            Paragraph("Username", table_header_style),
+            Paragraph("Password", table_header_style),
+            Paragraph("Code", table_header_style),
+            Paragraph("Portal Features", table_header_style)
+        ],
+        [
+            Paragraph("<b>Administrator</b>", table_cell_bold),
+            Paragraph("<code>NETCOM</code>", table_cell_style),
+            Paragraph("<code>Netcom@2026@Netcom</code>", table_cell_style),
+            Paragraph("ADM001", table_cell_style),
+            Paragraph("Netcom Admin Dashboard, HR Operations, Banner uploads, User details/leave balance search & edit, Biometric sync, Payroll", table_cell_style)
+        ],
+        [
+            Paragraph("<b>HR Manager</b>", table_cell_bold),
             Paragraph("<code>hr</code>", table_cell_style),
             Paragraph("<code>hr12345</code>", table_cell_style),
             Paragraph("HR001", table_cell_style),
-            Paragraph("HR punch in/out, manual attendance overrides, punch machine CSV upload, leave approvals", table_cell_style),
+            Paragraph("Netcom HR Dashboard, Leave review modal (Paid vs Unpaid), Work image previews, Duty punch, Biometric sync", table_cell_style)
         ],
         [
             Paragraph("<b>Employee</b>", table_cell_bold),
             Paragraph("<code>emp</code>", table_cell_style),
             Paragraph("<code>emp12345</code>", table_cell_style),
             Paragraph("EMP001", table_cell_style),
-            Paragraph("Punch In/Out, monthly work/leave calendar, daily work logging, apply for leave", table_cell_style),
-        ],
+            Paragraph("Netcom Employee Dashboard, Announcement popup, Webcam & GPS punch, Calendar with red rejected leaves, Work reports with image upload", table_cell_style)
+        ]
     ]
-    cred_table = Table(cred_rows, colWidths=[65, 75, 75, 75, 214])
+    cred_table = Table(cred_data, colWidths=[65, 75, 110, 48, 206])
     cred_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), primary_color),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, border_color),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, gray_bg]),
-        ('PADDING', (0, 0), (-1, -1), 5),
+        ('PADDING', (0, 0), (-1, -1), 3),
     ]))
     story.append(cred_table)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 4))
 
-    # Page Break for clean reading
+    # Page Break
     story.append(PageBreak())
 
-    # Section 3: Key Features & Architecture
-    story.append(Paragraph("3. Core Functional Modules", h1_style))
+    # Section 5: Project Structure
+    story.append(Paragraph("5. Complete Project File Structure", h1_style))
+    tree_box = """employee_management/
+│
+├── manage.py
+├── requirements.txt
+├── .env
+├── .gitignore
+│
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py
+│   └── wsgi.py
+│
+├── apps/
+│   ├── __init__.py
+│   ├── employees/
+│   │   ├── models.py, views.py, urls.py, forms.py, admin.py
+│   ├── departments/
+│   ├── attendance/
+│   │   ├── models.py (DailyWork work_image & is_offsite, BiometricDevice)
+│   │   ├── services.py (Casual Leave restoration engine)
+│   │   ├── biometric_service.py (Hardware TCP/UDP socket sync)
+│   │   └── views.py, urls.py, forms.py
+│   ├── leave_management/
+│   │   ├── models.py (HRNotification, is_paid, approval_type)
+│   │   └── views.py, urls.py, forms.py
+│   ├── payroll/ (Full, Half Day, 2h Permission & Paid/Unpaid Leave calculation)
+│   ├── users/ (decorators.py: @admin_required, @hr_or_admin_required)
+│   ├── dashboard/ (Netcom Employee/HR/Admin Dashboards & Banner models)
+│   └── reports/
+│
+├── templates/
+│   ├── base.html (Role-based navigation bar)
+│   ├── employees/, departments/, attendance/, leave_management/, payroll/
+│   └── dashboard/ (employee_dashboard, hr_dashboard, admin_dashboard)
+│
+├── static/
+│   ├── css/ (styles.css: Red rejected leave, scroll containers, lightboxes)
+│   ├── js/ (app.js: Webcam, GPS, lightbox modals, leave review modals)
+│   └── images/
+│
+├── media/
+│   ├── banners/ (Customizable dashboard hero banners)
+│   ├── employee_photos/ & punch_photos/
+│   └── daily_work_images/ (Employee work activity attachments)
+│
+├── database/
+│   ├── schema.sql
+│   └── backups/ (Full JSON database backups)
+│
+├── logs/
+└── tests/
+    └── test_all_features.py (15 Automated Comprehensive Tests)"""
+    story.append(Paragraph(tree_box.replace("\n", "<br/>").replace(" ", "&nbsp;"), code_style))
+    story.append(Spacer(1, 4))
 
-    story.append(Paragraph("A. Attendance & Biometric Punch System", h2_style))
-    story.append(Paragraph(
-        "• <b>Self-Service Punch:</b> Employees punch in and out with live timestamp capture. Total work duration is automatically computed.<br/>"
-        "• <b>Manual HR Adjustments:</b> HR and Admins can rectify employee clock-in/out records.<br/>"
-        "• <b>Biometric CSV Import:</b> Bulk import punch logs directly into attendance tables via CSV upload.",
-        body_style
-    ))
-
-    story.append(Paragraph("B. Monthly Calendar & Visual Tracking", h2_style))
-    story.append(Paragraph(
-        "• Interactive calendar rendering with month navigation (Previous/Next).<br/>"
-        "• <b>Color-coded indicators:</b> <font color='#16a34a'><b>Green</b></font> indicates working days, <font color='#dc2626'><b>Red</b></font> highlights approved leave days.<br/>"
-        "• Multi-month and span-based leave date tracking.",
-        body_style
-    ))
-
-    story.append(Paragraph("C. Automated Leave Credit & Management", h2_style))
-    story.append(Paragraph(
-        "• <b>Automated Monthly Credit:</b> Employees receive <b>+1 Casual Leave balance</b> automatically on their first portal activity each month.<br/>"
-        "• <b>Manual Command:</b> Run <code>python manage.py add_monthly_casual_leave</code> to credit all active staff at once.<br/>"
-        "• <b>Approval Workflow:</b> HR/Admin review pending requests. Approval deducts leave days from balance with balance deficit prevention.",
-        body_style
-    ))
-
-    story.append(Paragraph("D. Daily Work Log Submission", h2_style))
-    story.append(Paragraph(
-        "• Employees post daily project task updates with statuses: <i>Pending</i>, <i>In Progress</i>, or <i>Completed</i>.<br/>"
-        "• HR and Admin review real-time work submissions across departments.",
-        body_style
-    ))
-    story.append(Spacer(1, 10))
-
-    # Section 4: Biometric Punch Machine CSV Format
-    story.append(Paragraph("4. Biometric Machine CSV Specification", h1_style))
-    story.append(Paragraph(
-        "When importing records via the HR dashboard, format your CSV file as follows:",
-        body_style
-    ))
-
-    csv_data = [
+    # Section 6: Display Limits & Scroll Containers
+    story.append(Paragraph("6. Display Limits & Scrolling Standards", h1_style))
+    limit_data = [
         [
-            Paragraph("employee_code", table_header_style),
-            Paragraph("date", table_header_style),
-            Paragraph("time", table_header_style),
-            Paragraph("type", table_header_style)
+            Paragraph("Dashboard Section", table_header_style),
+            Paragraph("Dashboard", table_header_style),
+            Paragraph("Initial Records", table_header_style),
+            Paragraph("Scrolling Behavior", table_header_style)
         ],
         [
-            Paragraph("EMP001", table_cell_style),
-            Paragraph("2026-06-18", table_cell_style),
-            Paragraph("09:30:00", table_cell_style),
-            Paragraph("in", table_cell_style)
+            Paragraph("<b>My Daily Work Details</b>", table_cell_bold),
+            Paragraph("Employee", table_cell_style),
+            Paragraph("<b>4 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 255px</code>)", table_cell_style)
         ],
         [
-            Paragraph("EMP001", table_cell_style),
-            Paragraph("2026-06-18", table_cell_style),
-            Paragraph("18:15:00", table_cell_style),
-            Paragraph("out", table_cell_style)
+            Paragraph("<b>My Leave Details</b>", table_cell_bold),
+            Paragraph("Employee", table_cell_style),
+            Paragraph("<b>4 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 255px</code>)", table_cell_style)
         ],
         [
-            Paragraph("HR001", table_cell_style),
-            Paragraph("2026-06-18", table_cell_style),
-            Paragraph("09:45:00", table_cell_style),
-            Paragraph("in", table_cell_style)
+            Paragraph("<b>Leave Requests</b>", table_cell_bold),
+            Paragraph("HR", table_cell_style),
+            Paragraph("<b>5 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 310px</code>)", table_cell_style)
+        ],
+        [
+            Paragraph("<b>Employee Work Details</b>", table_cell_bold),
+            Paragraph("HR", table_cell_style),
+            Paragraph("<b>5 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 310px</code>)", table_cell_style)
+        ],
+        [
+            Paragraph("<b>All Leave Requests</b>", table_cell_bold),
+            Paragraph("Admin", table_cell_style),
+            Paragraph("<b>10 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 520px</code>)", table_cell_style)
+        ],
+        [
+            Paragraph("<b>All Work Updates</b>", table_cell_bold),
+            Paragraph("Admin", table_cell_style),
+            Paragraph("<b>10 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 520px</code>)", table_cell_style)
+        ],
+        [
+            Paragraph("<b>Employee Details & Leave Balance</b>", table_cell_bold),
+            Paragraph("Admin", table_cell_style),
+            Paragraph("<b>10 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 520px</code>)", table_cell_style)
+        ],
+        [
+            Paragraph("<b>Employee & HR Attendance Details</b>", table_cell_bold),
+            Paragraph("Admin", table_cell_style),
+            Paragraph("<b>10 records</b>", table_cell_bold),
+            Paragraph("Vertical scroll enabled (<code>max-height: 520px</code>)", table_cell_style)
         ]
     ]
-    csv_table = Table(csv_data, colWidths=[120, 120, 130, 134])
-    csv_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#374151")),
+    limit_table = Table(limit_data, colWidths=[150, 75, 95, 184])
+    limit_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1e293b")),
         ('GRID', (0, 0), (-1, -1), 0.5, border_color),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, gray_bg]),
-        ('PADDING', (0, 0), (-1, -1), 5),
+        ('PADDING', (0, 0), (-1, -1), 2.5),
     ]))
-    story.append(csv_table)
-    story.append(Spacer(1, 12))
+    story.append(limit_table)
+    story.append(Spacer(1, 4))
 
-    # Section 5: Bugs Identified & Fixed
-    story.append(Paragraph("5. Bugs Identified & Resolutions Applied", h1_style))
+    # Section 7: Quick Execution & Railway Deployment
+    story.append(Paragraph("7. Quick Start Execution & Railway Deployment Commands", h1_style))
+    cmd_box = """# Local / LAN Execution:
+python manage.py runserver 0.0.0.0:8000
 
-    bugs_table_data = [
-        [
-            Paragraph("Component", table_header_style),
-            Paragraph("Issue Identified", table_header_style),
-            Paragraph("Resolution Applied", table_header_style)
-        ],
-        [
-            Paragraph("<b>settings.py</b>", table_cell_bold),
-            Paragraph("<code>ALLOWED_HOSTS = []</code> caused HTTP 400 Bad Request on local and test clients.", table_cell_style),
-            Paragraph("Configured <code>ALLOWED_HOSTS = ['*']</code> to support localhost, 127.0.0.1, LAN IPs, and test clients.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>views.py</b>", table_cell_bold),
-            Paragraph("<code>get_profile()</code> threw unhandled <code>DoesNotExist</code> 500 crash when superusers logged in without prior profile.", table_cell_style),
-            Paragraph("Implemented auto-profile provisioning with safe employee code generation and role assignment.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>urls.py</b>", table_cell_bold),
-            Paragraph("<code>LOGOUT_REDIRECT_URL = 'front_page'</code> crashed with <code>NoReverseMatch</code> because <code>front_page</code> route was omitted.", table_cell_style),
-            Paragraph("Mapped <code>path('front/', views.front_page, name='front_page')</code> in <code>core/urls.py</code>.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>script.js</b>", table_cell_bold),
-            Paragraph("Front page close button called undefined <code>closeAd()</code>, triggering JavaScript runtime exception.", table_cell_style),
-            Paragraph("Defined <code>closeAd()</code> and guarded <code>performance.getEntriesByType</code> against undefined indexing.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>admin_dashboard.html</b>", table_cell_bold),
-            Paragraph("Popup banner in admin template lacked close button, trapping admin modal.", table_cell_style),
-            Paragraph("Added <code>&lt;button class='image-close-btn' onclick='closeDashboardImage()'&gt;×&lt;/button&gt;</code>.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>views.py</b> (CSV)", table_cell_bold),
-            Paragraph("CSV upload crashed on UTF-8 BOM encoding or trailing spaces in employee codes.", table_cell_style),
-            Paragraph("Added UTF-8 BOM auto-detection (<code>utf-8-sig</code>), whitespace trimming, and row-level exception safety.", table_cell_style)
-        ],
-        [
-            Paragraph("<b>views.py</b> (Forms)", table_cell_bold),
-            Paragraph("Invalid work logs or leave requests redirected silently without user-facing feedback.", table_cell_style),
-            Paragraph("Surfaced form error messages cleanly using Django's message framework.", table_cell_style)
-        ]
-    ]
-    bugs_table = Table(bugs_table_data, colWidths=[100, 190, 214])
-    bugs_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), secondary_color),
-        ('GRID', (0, 0), (-1, -1), 0.5, border_color),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, gray_bg]),
-        ('PADDING', (0, 0), (-1, -1), 5),
-    ]))
-    story.append(bugs_table)
-    story.append(Spacer(1, 14))
+# Execute 100% Automated Test Suite (17 comprehensive tests):
+python manage.py test tests
 
-    # Page Break for clean reading
-    story.append(PageBreak())
-
-    # Section 6: Verification & Testing
-    story.append(Paragraph("6. Verification & Automated Test Suite", h1_style))
-    story.append(Paragraph(
-        "A complete Django test suite (<code>core/tests.py</code>) has been added covering all core workflows:",
-        body_style
-    ))
-    story.append(Paragraph(
-        "• Front page and login authentication<br/>"
-        "• Automatic role-based dashboard redirection (Admin, HR, Employee)<br/>"
-        "• Self-healing profile generation for newly provisioned accounts<br/>"
-        "• Punch in / out calculations and work hour determination<br/>"
-        "• Daily work update lifecycle<br/>"
-        "• Leave request submission, balance validation, and HR approval<br/>"
-        "• Biometric CSV upload parsing and database persistence<br/>"
-        "• Admin user creation and cascading account deletion",
-        body_style
-    ))
-    story.append(Spacer(1, 6))
-
-    test_cmd = """# Run the Automated Test Suite
-python manage.py test
-
-# Expected Output:
-# Creating test database for alias 'default'...
-# Found 8 test(s).
-# ........
-# ----------------------------------------------------------------------
-# Ran 8 tests in ~9s
-# OK"""
-    story.append(Paragraph(test_cmd.replace("\n", "<br/>").replace(" ", "&nbsp;"), code_style))
-    story.append(Spacer(1, 10))
-
-    # Section 7: Troubleshooting & FAQ
-    story.append(Paragraph("7. Troubleshooting & FAQ", h1_style))
-
-    story.append(Paragraph("Q1: Port 8000 is already in use by another service.", h2_style))
-    story.append(Paragraph(
-        "<b>Solution:</b> Launch the development server on an alternative port (e.g., 8080 or 8001):<br/>"
-        "<code>python manage.py runserver 8080</code>",
-        body_style
-    ))
-
-    story.append(Paragraph("Q2: How do I access the Django Admin backend?", h2_style))
-    story.append(Paragraph(
-        "<b>Solution:</b> Navigate to <b><code>http://127.0.0.1:8000/django-admin/</code></b> and log in with your Admin credentials (<code>admin</code> / <code>admin12345</code>). "
-        "Here you can manage raw database tables, sessions, and group permissions.",
-        body_style
-    ))
-
-    story.append(Paragraph("Q3: How do I reset the database to a fresh state?", h2_style))
-    story.append(Paragraph(
-        "<b>Solution:</b> Delete <code>employee_db.sqlite3</code>, then execute:<br/>"
-        "<code>python manage.py migrate</code><br/>"
-        "<code>python manage.py create_demo_users</code>",
-        body_style
-    ))
-
-    story.append(Paragraph("Q4: Can I run this application over a local office network (LAN)?", h2_style))
-    story.append(Paragraph(
-        "<b>Solution:</b> Yes. Because <code>ALLOWED_HOSTS = ['*']</code> is enabled, start the server bound to all network interfaces:<br/>"
-        "<code>python manage.py runserver 0.0.0.0:8000</code><br/>"
-        "Team members can access it using your computer's IP address (e.g. <code>http://192.168.1.50:8000/</code>).",
-        body_style
-    ))
+# Railway Cloud Deployment:
+# Configured via Procfile, railway.json, nixpacks.toml, and WhiteNoise.
+# Connect your Git repository to Railway, provision MySQL (or connect via DATABASE_URL),
+# and Railway automatically applies migrations and serves via Gunicorn on port $PORT."""
+    story.append(Paragraph(cmd_box.replace("\n", "<br/>").replace(" ", "&nbsp;"), code_style))
 
     doc.build(story, canvasmaker=NumberedCanvas)
     print(f"Successfully generated {filename}")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     build_guide_pdf("HOW_TO_RUN_PROJECT.pdf")
