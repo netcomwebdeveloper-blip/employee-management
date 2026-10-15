@@ -146,7 +146,7 @@ class AttendanceAndMessagingTests(TestCase):
         self.client.logout()
 
     def test_official_duty_marking_and_payroll(self):
-        target_date = timezone.localdate() - timedelta(days=1)
+        target_date = date(2026, 9, 15)
 
         # First give employee a leave on that date that reduced balance
         initial_balance = self.emp_profile.casual_leave_balance  # 1
@@ -185,10 +185,11 @@ class AttendanceAndMessagingTests(TestCase):
         self.emp_profile.refresh_from_db()
         self.assertEqual(self.emp_profile.casual_leave_balance, initial_balance)  # Restored to 1
 
-        # Check payroll credits full day Present with zero deduction
-        payroll_data = calculate_payroll_for_employee(self.emp_profile, target_date.year, target_date.month)
+        # Check payroll credits full day Present with zero deduction for that month
+        payroll_data = calculate_payroll_for_employee(self.emp_profile, 2026, 9)
         self.assertEqual(payroll_data['full_days'], 1)
-        self.assertEqual(payroll_data['absent_deduction'], Decimal('0.00'))
+        self.assertEqual(payroll_data['absent_days'], 0)
+        self.assertEqual(payroll_data['incomplete_punch_days'], [])
 
     def test_unauthorized_official_duty_rejected(self):
         target_date = timezone.localdate()

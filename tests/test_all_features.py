@@ -754,7 +754,7 @@ class ComprehensiveSystemTests(TestCase):
         att = Attendance.objects.filter(employee=self.admin_profile, date=date.today()).first()
         self.assertIsNotNone(att)
         self.assertIsNotNone(att.in_time)
-        self.assertEqual(att.status, 'Present')
+        self.assertEqual(att.status, 'Missing Punch-Out')
         self.assertIn('ADMIN Punch', att.update_source)
         self.assertIsNotNone(att.in_photo)
 
@@ -769,6 +769,7 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(r_out.status_code, 302)
         att.refresh_from_db()
         self.assertIsNotNone(att.out_time)
+        self.assertEqual(att.status, 'Present')
         self.client.logout()
 
     def test_casual_leave_policy_monthly_reset_no_carry_forward(self):

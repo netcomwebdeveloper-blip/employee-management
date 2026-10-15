@@ -130,6 +130,8 @@ class Attendance(models.Model):
                     self.status = 'Present'
                 elif mins >= 270:
                     self.status = 'Half Day'
+                elif self.status == 'Missing Punch-Out':
+                    self.status = 'Present'
         elif self.in_time and not self.out_time:
             if self.status not in ('Permission - 2 Hours', 'On Leave'):
                 self.status = 'Missing Punch-Out'
