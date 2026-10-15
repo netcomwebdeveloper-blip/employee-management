@@ -1,0 +1,168 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<div id="dashboardImagePopup" class="dashboard-image-popup">
+    <div class="dashboard-image-box">
+        <button class="image-close-btn" onclick="closeDashboardImage()">×</button>
+        <img src="{% static 'core/dashboard_popup.svg' %}" alt="Employee Management Advertisement">
+    </div>
+</div>
+
+<header class="topbar">
+    <div>
+        <h1>HR Dashboard</h1>
+        <p>HR attendance, employee attendance update, punch machine update, leave and work details</p>
+    </div>
+    <div class="top-actions">
+        <a href="{% url 'admin_dashboard' %}" class="nav-btn">Admin Page</a>
+        <a href="{% url 'logout' %}" class="logout">Logout</a>
+    </div>
+</header>
+
+<main class="container">
+    {% for message in messages %}
+    <div class="alert">{{ message }}</div>
+    {% endfor %}
+
+    <section class="cards">
+        <div class="card"><h3>Total Users</h3><p>{{ employees|length }}</p></div>
+        <div class="card"><h3>HR In Time</h3><p>{% if hr_attendance.in_time %}{{ hr_attendance.in_time }}{% else %}Not In{% endif %}</p></div>
+        <div class="card"><h3>HR Out Time</h3><p>{% if hr_attendance.out_time %}{{ hr_attendance.out_time }}{% else %}Not Out{% endif %}</p></div>
+        <div class="card"><h3>Pending Leaves</h3><p>{{ pending_leaves }}</p></div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>HR Punch In / Punch Out</h2>
+            <form method="POST" class="button-row">
+                {% csrf_token %}
+                <button name="action" value="hr_punch_in" class="btn">HR Punch In</button>
+                <button name="action" value="hr_punch_out" class="btn danger">HR Punch Out</button>
+            </form>
+            <p class="hint">HR attendance is saved automatically.</p>
+        </div>
+
+        <div class="panel">
+            <h2>HR/Admin Update Employee In/Out Time</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="manual_attendance">
+                {{ attendance_form.as_p }}
+                <button class="btn">Update Attendance</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>Punch Machine CSV Update</h2>
+            <p class="hint">CSV format: employee_code,date,time,type. Example: EMP001,2026-06-18,09:30:00,in</p>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="punch_machine_upload">
+                {{ upload_form.as_p }}
+                <button class="btn">Upload Punch Machine CSV</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Add Employee / HR / Admin</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_user">
+                {{ form.as_p }}
+                <button class="btn">Add User</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Employee Details and Leave Balance</h2>
+        <form method="GET" class="search-form">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name, code, department, role">
+            <button class="btn">Search</button>
+        </form>
+        <div class="table-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th><th>Name</th><th>Role</th><th>Department</th><th>Designation</th>
+                        <th>Casual Leave</th><th>Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td>{{ emp.employee_code }}</td>
+                        <td>{{ emp.user.get_full_name|default:emp.user.username }}</td>
+                        <td>{{ emp.role }}</td>
+                        <td>{{ emp.department }}</td>
+                        <td>{{ emp.designation }}</td>
+                        <td>{{ emp.casual_leave_balance }}</td>
+                        <td>{{ emp.phone }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">No employees found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>Leave Requests</h2>
+            {% for leave in leaves %}
+            <div class="item">
+                <h3>{{ leave.employee.user.get_full_name|default:leave.employee.user.username }} - {{ leave.leave_type }}</h3>
+                <p><b>From:</b> {{ leave.from_date }} <b>To:</b> {{ leave.to_date }}</p>
+                <p><b>Total Days:</b> {{ leave.total_days }}</p>
+                <p><b>Reason:</b> {{ leave.reason }}</p>
+                <p><b>Status:</b> <span class="status">{{ leave.status }}</span></p>
+                {% if leave.status == 'Pending' %}
+                <a href="{% url 'update_leave_status' leave.id 'Approved' %}" class="small-btn">Approve</a>
+                <a href="{% url 'update_leave_status' leave.id 'Rejected' %}" class="small-btn danger">Reject</a>
+                {% endif %}
+            </div>
+            {% empty %}<p>No leave requests.</p>{% endfor %}
+        </div>
+
+        <div class="panel">
+            <h2>Employee Work Details</h2>
+            {% for work in works %}
+            <div class="item">
+                <h3>{{ work.employee.user.get_full_name|default:work.employee.user.username }} - {{ work.project_name }}</h3>
+                <p><b>Date:</b> {{ work.date }} | <b>Status:</b> {{ work.status }}</p>
+                <p>{{ work.work_details }}</p>
+            </div>
+            {% empty %}<p>No work updates.</p>{% endfor %}
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Employee and HR Attendance Details</h2>
+        <div class="table-box">
+            <table>
+                <thead>
+                    <tr><th>Employee</th><th>Role</th><th>Date</th><th>In Time</th><th>Out Time</th><th>Total Time</th><th>Source</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in attendance %}
+                    <tr>
+                        <td>{{ row.employee.user.get_full_name|default:row.employee.user.username }}</td>
+                        <td>{{ row.employee.role }}</td>
+                        <td>{{ row.date }}</td>
+                        <td>{% if row.in_time %}{{ row.in_time }}{% else %}-{% endif %}</td>
+                        <td>{% if row.out_time %}{{ row.out_time }}{% else %}-{% endif %}</td>
+                        <td>{{ row.total_work_time }}</td>
+                        <td>{{ row.update_source }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">No attendance records.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

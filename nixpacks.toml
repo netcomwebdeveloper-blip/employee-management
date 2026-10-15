@@ -1,8 +1,9 @@
-[phases.setup]
-nixPkgs = ["python312"]
+# Nixpacks configuration for Railway deployment
+# Use the official Python provider which configures /opt/venv and pip automatically
+providers = ["python"]
 
-[phases.install]
-cmds = ["python -m pip install -r requirements.txt"]
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.12"
 
 [phases.build]
 cmds = ["python manage.py collectstatic --no-input"]

@@ -1,179 +1,71 @@
-# NETCOM Employee Management System Pro
+# Django Employee Management System Pro
 
-Enterprise-grade, modular Django Human Resource Management System (HRMS) built with modern design principles, role-based workflows, automated attendance tracking, leave management, payroll processing, and business intelligence reporting.
+Fresh upgraded Django project with Employee, HR, Admin, monthly calendar, advertisement popup, HR/Admin manual attendance update and punch machine CSV update.
 
----
+## Features
 
-## 1. Project Directory Structure
+- Front page advertisement popup
+- Login page
+- Employee dashboard
+- HR dashboard
+- Admin page
+- Django admin page
+- Monthly calendar
+- Working days green
+- Leave days red
+- Previous and next month calendar
+- Casual leave balance auto adds +1 every month
+- Employee punch in/out auto time
+- HR punch in/out auto time
+- HR/Admin can update employee in/out time manually
+- Total working time calculated from in time and out time
+- Punch machine CSV upload update
+- SQLite database
 
-```text
-employee_management/
-│
-├── manage.py
-├── requirements.txt
-├── .env
-├── .gitignore
-├── run_server.bat
-│
-├── config/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-│
-├── apps/
-│   ├── __init__.py
-│   │
-│   ├── employees/
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   ├── admin.py
-│   │   └── migrations/
-│   │
-│   ├── departments/
-│   ├── attendance/
-│   ├── leave_management/
-│   ├── payroll/
-│   ├── users/
-│   ├── dashboard/
-│   └── reports/
-│
-├── templates/
-│   ├── base.html
-│   ├── users/
-│   ├── employees/
-│   ├── departments/
-│   ├── attendance/
-│   ├── leave_management/
-│   ├── payroll/
-│   ├── dashboard/
-│   └── reports/
-│
-├── static/
-│   ├── css/
-│   │   └── styles.css
-│   ├── js/
-│   │   └── main.js
-│   └── images/
-│
-├── media/
-│   └── employee_documents/
-│
-├── database/
-│   ├── schema.sql
-│   └── backups/
-│       ├── employee_db_backup.json
-│       └── employee_db_mysql_dump.sql
-│
-├── logs/
-│   └── application.log
-└── tests/
-    ├── __init__.py
-    └── test_all_features.py
-```
+## Run Commands
 
----
+### Option 1: One-Click Launcher (Windows)
+Double-click `run_server.bat` in the project root directory. It runs migrations and launches the browser automatically.
 
-## 2. Default Access Credentials
-
-All existing user records and history have been preserved and migrated:
-
-| Role | Username | Password | Dedicated Portal |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `NETCOM` | `Netcom@2026@Netcom` | `http://127.0.0.1:8000/dashboard/` |
-| **HR Manager** | `hr` | `hr12345` | `http://127.0.0.1:8000/dashboard/` |
-| **Employee** | `emp` | `emp12345` | `http://127.0.0.1:8000/dashboard/` |
-| **Django Admin** | `NETCOM` | `Netcom@2026@Netcom` | `http://127.0.0.1:8000/django-admin/` |
-
-> **Important:** The login endpoint remains strictly preserved at **`/login/`** (and `/` redirects directly to login/dashboard).
-
----
-
-## 3. Quick Start & Execution
-
-### Option A: One-Click Launcher (Windows)
-Double-click `run_server.bat`. It will automatically:
-1. Verify database migrations.
-2. Start the Django server listening on `0.0.0.0:8000` (allowing local and LAN access).
-3. Automatically open your browser to `http://127.0.0.1:8000/login/`.
-
-### Option B: Command Line Terminal
-```powershell
-# 1. Navigate to employee_management
-cd D:\employee_management\django_employee_management_pro\employee_management
-
-# 2. Run database migrations
+### Option 2: Command Line
+```bash
 python manage.py migrate
-
-# 3. Start server
-python manage.py runserver 0.0.0.0:8000
+python manage.py create_demo_users
+python manage.py runserver
 ```
 
-Open your browser at: **`http://127.0.0.1:8000/login/`**
-
----
-
-## 4. Multi-Computer & LAN Sharing Guide
-
-To enable team members on other computers to access the system:
-
-1. Find your host machine's local IP address (e.g., `192.168.1.50`):
-   ```powershell
-   ipconfig
-   ```
-2. Start the server bound to `0.0.0.0`:
-   ```powershell
-   python manage.py runserver 0.0.0.0:8000
-   ```
-3. Any computer on the same Wi-Fi / office network can access the portal via:
-   ```text
-   http://192.168.1.50:8000/login/
-   ```
-4. All links use dynamic Django reverse routing (`{% url '...' %}`), ensuring **zero broken links** when accessed across different domains or IPs.
-
----
-
-## 5. Dual Database Architecture (MySQL & SQLite)
-
-The application supports both **MySQL** (Default, with PyMySQL) and **SQLite**, configured directly in `.env`:
-
-```ini
-# Database Settings in .env
-USE_MYSQL=True
-DB_NAME=employee_db
-DB_USER=root
-DB_PASSWORD=root
-DB_HOST=127.0.0.1
-DB_PORT=3306
+Open your browser at:
+```text
+http://127.0.0.1:8000/
 ```
 
-- When `USE_MYSQL=True`: Connects natively to MySQL Server 8.0 `employee_db`.
-- When `USE_MYSQL=False`: Connects to `database/employee_db.sqlite3`.
+## Documentation & PDF Guide
+A complete 4-page PDF guide is included:
+- **`HOW_TO_RUN_PROJECT.pdf`**: Setup instructions, architecture overview, role credentials, CSV specifications, bug fixes, and FAQs.
+- To re-generate the PDF at any time, run: `python generate_pdf_guide.py`
 
----
+## Demo Login
 
-## 6. Biometric Machine CSV Upload Format
+Admin: admin / admin12345
+HR: hr / hr12345
+Employee: emp / emp12345
 
-When importing punches through the HR portal or Attendance page:
+## Punch Machine CSV Format
+
+Create a CSV file like:
 
 ```csv
 employee_code,date,time,type
-EMP001,2026-10-12,09:30:00,in
-EMP001,2026-10-12,18:15:00,out
-HR001,2026-10-12,09:45:00,in
-HR001,2026-10-12,18:30:00,out
+EMP001,2026-06-18,09:30:00,in
+EMP001,2026-06-18,18:15:00,out
 ```
 
----
+Upload it in the HR page.
 
-## 7. Automated Test Suite
+## Add Monthly Casual Leave Manually
 
-Run the comprehensive test suite verifying authentication, punch calculations, leave deduction, biometric import, and payroll vouchers:
-
-```powershell
-python manage.py test tests
+```bash
+python manage.py add_monthly_casual_leave
 ```
-*Expected: 7 tests passing in ~8s (`OK`).*
+
+The dashboard also auto-checks and adds one casual leave for the current month once per user.

@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="login-page">
+    <div class="login-card"><center>
+        <h1>Netcom</h1>
+        <p>Login Page</p></center>
+
+        {% if form.errors %}
+        <div class="alert error">Invalid username or password.</div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <label>Username</label>
+            <input type="text" name="username" placeholder="Enter username" required>
+
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Enter password" required>
+            <center>
+            <button class="btn full">Login</button></center>
+        </form>
+
+        <!-- <div class="demo-box">
+            <h3>Demo Login</h3>
+            <p><b>Admin:</b> admin / admin12345</p>
+            <p><b>HR:</b> hr / hr12345</p>
+            <p><b>Employee:</b> emp / emp12345</p>
+        </div> -->
+    </div>
+</div>
+{% endblock %}

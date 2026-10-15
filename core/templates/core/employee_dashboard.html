@@ -1,0 +1,117 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<div id="dashboardImagePopup" class="dashboard-image-popup">
+    <div class="dashboard-image-box">
+        <button class="image-close-btn" onclick="closeDashboardImage()">×</button>
+        <img src="{% static 'core/dashboard_popup.svg' %}" alt="Employee Management Advertisement">
+    </div>
+</div>
+
+<header class="topbar">
+    <div>
+        <h1>Employee Dashboard</h1>
+        <p>Welcome, {{ profile.user.get_full_name|default:profile.user.username }}</p>
+    </div>
+    <a href="{% url 'logout' %}" class="logout">Logout</a>
+</header>
+
+<main class="container">
+    {% for message in messages %}
+    <div class="alert">{{ message }}</div>
+    {% endfor %}
+
+    <section class="cards">
+        <div class="card"><h3>Today</h3><p>{{ today }}</p></div>
+        <div class="card"><h3>In Time</h3><p>{% if attendance.in_time %}{{ attendance.in_time }}{% else %}Not punched in{% endif %}</p></div>
+        <div class="card"><h3>Out Time</h3><p>{% if attendance.out_time %}{{ attendance.out_time }}{% else %}Not punched out{% endif %}</p></div>
+        <div class="card"><h3>Total Time</h3><p>{{ attendance.total_work_time }}</p></div>
+    </section>
+
+    <section class="cards">
+        <div class="card leave-card"><h3>Casual Leave Balance</h3><p>{{ profile.casual_leave_balance }}</p></div>
+        <div class="card leave-card"><h3>Calendar Month</h3><p>{{ month_name }}</p></div>
+        <div class="card leave-card"><h3>Year</h3><p>{{ current_year }}</p></div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>Employee Punch In / Punch Out</h2>
+            <form method="POST" class="button-row">
+                {% csrf_token %}
+                <button name="action" value="punch_in" class="btn">Punch In</button>
+                <button name="action" value="punch_out" class="btn danger">Punch Out</button>
+            </form>
+            <p class="hint">Employee can update only own punch in/out. HR/Admin can update employee attendance manually.</p>
+        </div>
+
+        <div class="panel">
+            <div class="calendar-head">
+                <a class="small-btn" href="?year={{ prev_year }}&month={{ prev_month }}">Previous</a>
+                <h2>{{ month_name }} {{ current_year }} Calendar</h2>
+                <a class="small-btn" href="?year={{ next_year }}&month={{ next_month }}">Next</a>
+            </div>
+
+            <table class="calendar">
+                <tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+                {% for week in calendar_rows %}
+                <tr>
+                    {% for day in week %}
+                    <td class="{{ day.class_name }}">{{ day.day }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+            <p class="hint"><span class="mark working-mark"></span> Working day <span class="mark leave-mark"></span> Leave day</p>
+        </div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>Update Daily Work</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="daily_work">
+                {{ work_form.as_p }}
+                <button class="btn">Submit Work</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Leave Request</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="leave_request">
+                {{ leave_form.as_p }}
+                <button class="btn">Apply Leave</button>
+            </form>
+        
+        </div>
+    </section>
+
+    <section class="grid-2">
+        <div class="panel">
+            <h2>My Daily Work Details</h2>
+            {% for work in works %}
+            <div class="item">
+                <h3>{{ work.project_name }}</h3>
+                <p><b>Date:</b> {{ work.date }} | <b>Status:</b> {{ work.status }}</p>
+                <p>{{ work.work_details }}</p>
+            </div>
+            {% empty %}<p>No work updates yet.</p>{% endfor %}
+        </div>
+
+        <div class="panel">
+            <h2>My Leave Details</h2>
+            {% for leave in leaves %}
+            <div class="item">
+                <h3>{{ leave.leave_type }} - <span class="status">{{ leave.status }}</span></h3>
+                <p><b>From:</b> {{ leave.from_date }} <b>To:</b> {{ leave.to_date }}</p>
+                <p><b>Total Days:</b> {{ leave.total_days }}</p>
+                <p>{{ leave.reason }}</p>
+            </div>
+            {% empty %}<p>No leave requests yet.</p>{% endfor %}
+        </div>
+    </section>
+</main>
+{% endblock %}

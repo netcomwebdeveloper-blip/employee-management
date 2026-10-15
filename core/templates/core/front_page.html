@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div id="adPopup" class="ad-popup">
+    <div class="ad-box">
+        <button class="close-btn" onclick="closeAd()">×</button>
+        <h2>Special Office HR System</h2>
+        <p>Manage attendance, leave, employee work updates and HR reports in one place.</p>
+        <a href="{% url 'login' %}" class="btn">Login Now</a>
+    </div>
+</div>
+
+<header class="front-header">
+    <h1>Employee Management System Pro</h1>
+    <p>Attendance, leave, HR and admin management with Django + SQLite</p>
+    <a href="{% url 'login' %}" class="btn">Go to Login</a>
+</header>
+
+<section class="front-cards">
+    <div class="front-card"><h3>Employee Page</h3><p>Calendar, punch in/out, leave request and daily work update.</p></div>
+    <div class="front-card"><h3>HR Page</h3><p>HR attendance, employee details, leave approval and work reports.</p></div>
+    <div class="front-card"><h3>Admin Page</h3><p>Create users, delete users and view all database records.</p></div>
+</section>
+{% endblock %}
