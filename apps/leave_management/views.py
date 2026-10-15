@@ -111,106 +111,8 @@ def leave_list(request):
     return render(request, 'leave_management/leave_list.html', context)
 
 @login_required
-def request_permission(request):
-    """
-    Allows employees to request up to 2 hours of permission per working day.
-    Validates time range, prevents overlapping/duplicate permission requests,
-    marks request as Pending, and notifies HR for review.
-    """
-    from datetime import datetime, time
-    from decimal import Decimal
-
-    profile = getattr(request.user, 'employee', None)
-    if not profile:
-        messages.error(request, "Employee profile required to request permission.")
-        return redirect('dashboard:index')
-
-    if request.method == 'POST':
-        date_str = request.POST.get('date', '').strip()
-        start_str = request.POST.get('start_time', '').strip()
-        end_str = request.POST.get('end_time', '').strip()
-        reason = request.POST.get('reason', '').strip()
-
-        if not date_str or not start_str or not end_str or not reason:
-            messages.error(request, "All fields (Date, Start Time, End Time, Reason) are required to request permission.")
-            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-        try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            sh, sm = [int(p) for p in start_str.split(':')[:2]]
-            eh, em = [int(p) for p in end_str.split(':')[:2]]
-            start_mins = sh * 60 + sm
-            end_mins = eh * 60 + em
-        except Exception:
-            messages.error(request, "Invalid date or time format provided.")
-            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-        diff_mins = end_mins - start_mins
-        if diff_mins <= 0:
-            messages.error(request, "Invalid time range: End time must be after start time.")
-            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-        if diff_mins > 120:
-            messages.error(request, "Permission limit exceeded: Maximum allowed duration is 2 hours (120 minutes) per working day.")
-            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-        # Check for duplicate / overlapping permission requests for this employee and date
-        existing = LeaveRequest.objects.filter(
-            employee=profile,
-            from_date=target_date,
-            leave_type='Permission',
-            status__in=['Pending', 'Approved']
-        ).first()
-
-        if existing:
-            messages.error(
-                request,
-                f"A permission request for {target_date.strftime('%b %d, %Y')} is already {existing.status.lower()}. "
-                "Overlapping or duplicate permission requests for the same working day are not permitted."
-            )
-            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-        # Format times
-        t_start = time(sh, sm)
-        t_end = time(eh, em)
-        dur_label = f"{diff_mins // 60}h {diff_mins % 60}m" if diff_mins >= 60 else f"{diff_mins} mins"
-
-        leave = LeaveRequest.objects.create(
-            employee=profile,
-            leave_type='Permission',
-            from_date=target_date,
-            to_date=target_date,
-            total_days=1,
-            is_paid=True,
-            approval_type=f"Permission ({dur_label})",
-            reason=f"Permission from {t_start.strftime('%I:%M %p')} to {t_end.strftime('%I:%M %p')} ({dur_label}). Reason: {reason}",
-            status='Pending'
-        )
-
-        HRNotification.objects.create(
-            recipient_role='HR',
-            title=f"New Permission Request from {profile.display_name()}",
-            message=(
-                f"{profile.display_name()} ({profile.employee_code}) has submitted a permission request for "
-                f"{target_date.strftime('%b %d, %Y')} from {t_start.strftime('%I:%M %p')} to {t_end.strftime('%I:%M %p')} "
-                f"({dur_label}). Reason: {reason}"
-            ),
-            leave_request=leave
-        )
-
-        messages.success(
-            request,
-            f"Permission request for {dur_label} on {target_date.strftime('%b %d, %Y')} submitted successfully! "
-            "Status: Pending HR Approval."
-        )
-        return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
-
-    return redirect('dashboard:index')
-
-@login_required
 @hr_or_admin_required
 def leave_status_update(request, pk, status=None):
-    from decimal import Decimal
     leave = get_object_or_404(LeaveRequest, pk=pk)
     old_status = leave.status
 
@@ -225,43 +127,6 @@ def leave_status_update(request, pk, status=None):
 
     if status in ('Approved', 'Rejected'):
         if status == 'Approved':
-            if leave.leave_type == 'Permission':
-                leave.is_paid = True
-                leave.approval_type = 'Permission (Approved)'
-                leave.status = 'Approved'
-                leave.reviewed_by = request.user
-                leave.save()
-
-                att, created = Attendance.objects.get_or_create(employee=leave.employee, date=leave.from_date)
-                att.is_permission = True
-                att.permission_hours = Decimal('2.00')
-                att.updated_by = request.user
-                att.update_source = 'HR Approved Permission'
-                att.leave_reason = leave.reason
-                # Recompute status with permission:
-                effective_mins = att.total_work_minutes + int(att.permission_hours * 60)
-                if effective_mins >= 540:
-                    att.status = 'Present'
-                elif effective_mins >= 270:
-                    att.status = 'Half Day'
-                elif att.total_work_minutes > 0:
-                    att.status = 'Permission - 2 Hours'
-                else:
-                    att.status = 'Permission - 2 Hours'
-                att.save()
-
-                AttendanceAuditLog.objects.create(
-                    attendance=att,
-                    changed_by=request.user,
-                    action='PERMISSION_APPROVED',
-                    old_values=f"Status: {old_status}",
-                    new_values=f"Approved Permission: {att.permission_hours}h, Attendance Status: {att.status}",
-                    ip_address=request.META.get('REMOTE_ADDR', '')
-                )
-                messages.success(request, f"Permission request for {leave.employee.display_name()} approved successfully with full salary credit.")
-                HRNotification.objects.filter(leave_request=leave).update(is_read=True)
-                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
-
             # Check classification: Paid Sick Leave vs Paid Casual Leave
             if classification == 'Paid Sick Leave' or leave.leave_type == 'Sick Leave':
                 leave.is_paid = True
@@ -318,34 +183,6 @@ def leave_status_update(request, pk, status=None):
             )
 
         elif status == 'Rejected':
-            if leave.leave_type == 'Permission':
-                leave.status = 'Rejected'
-                leave.reviewed_by = request.user
-                leave.rejection_reason = rejection_reason or 'Permission request rejected by HR.'
-                leave.save()
-
-                att = Attendance.objects.filter(employee=leave.employee, date=leave.from_date).first()
-                if att and att.is_permission:
-                    att.is_permission = False
-                    att.permission_hours = Decimal('0.00')
-                    if att.in_time and att.out_time:
-                        if att.total_work_minutes >= 540:
-                            att.status = 'Present'
-                        elif att.total_work_minutes >= 270:
-                            att.status = 'Half Day'
-                        else:
-                            att.status = 'Absent'
-                    elif att.in_time:
-                        att.status = 'Missing Punch-Out'
-                    else:
-                        att.status = 'Absent'
-                    att.updated_by = request.user
-                    att.save()
-
-                messages.warning(request, f"Permission request for {leave.employee.display_name()} has been rejected.")
-                HRNotification.objects.filter(leave_request=leave).update(is_read=True)
-                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
-
             # Revert balance if previously approved as Paid Casual Leave
             if old_status == 'Approved' and leave.is_paid and ('Casual' in leave.approval_type or 'Casual' in leave.leave_type):
                 leave.employee.casual_leave_balance = min(1, leave.employee.casual_leave_balance + leave.total_days)

@@ -103,10 +103,7 @@ class Attendance(models.Model):
             return True
         if self.is_missing_punch_out or not self.out_time:
             return False
-        mins = self.total_work_minutes
-        if self.is_permission:
-            mins += int((self.permission_hours or Decimal('2.00')) * 60)
-        return mins >= 540 or self.status == 'Present'
+        return self.total_work_minutes >= 540 or self.status == 'Present'
 
     @property
     def is_half_day(self):
@@ -115,10 +112,7 @@ class Attendance(models.Model):
             return False
         if self.status == 'Half Day':
             return True
-        mins = self.total_work_minutes
-        if self.is_permission:
-            mins += int((self.permission_hours or Decimal('2.00')) * 60)
-        return 270 <= mins < 540
+        return 270 <= self.total_work_minutes < 540
 
     @property
     def is_permission_approved(self):
@@ -132,20 +126,14 @@ class Attendance(models.Model):
             self.is_approved_leave = False
         # Auto-compute status when punch in & out are present and not manually overridden
         elif self.in_time and self.out_time:
-            if not self.is_approved_leave and self.status != 'On Leave':
+            if not self.is_permission and self.status not in ('Permission - 2 Hours', 'On Leave'):
                 mins = self.total_work_minutes
-                if self.is_permission or self.status == 'Permission - 2 Hours':
-                    perm_mins = int((self.permission_hours or Decimal('2.00')) * 60)
-                    mins += perm_mins
-
                 if mins >= 540:
                     self.status = 'Present'
                 elif mins >= 270:
                     self.status = 'Half Day'
-                elif self.is_permission or self.status == 'Permission - 2 Hours':
-                    self.status = 'Permission - 2 Hours'
-                else:
-                    self.status = 'Absent'
+                elif self.status == 'Missing Punch-Out':
+                    self.status = 'Present'
         elif self.in_time and not self.out_time:
             if self.status not in ('Permission - 2 Hours', 'On Leave'):
                 self.status = 'Missing Punch-Out'

@@ -981,11 +981,6 @@ def employee_dashboard(request, profile):
             messages.success(request, "Your message has been sent directly to the HR department. HR will review and address your enquiry.")
         return redirect('dashboard:index')
 
-    # Handle Employee "Request Permission"
-    if request.method == 'POST' and request.POST.get('action') == 'request_permission':
-        from apps.leave_management.views import request_permission
-        return request_permission(request)
-
     year = request.GET.get('year')
     month = request.GET.get('month')
 
