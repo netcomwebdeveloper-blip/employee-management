@@ -65,6 +65,12 @@ if csrf_origins:
         if cleaned and cleaned not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(cleaned)
 
+# CSRF Cookie and Session settings
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -90,7 +96,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'apps.users.middleware.CustomCsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
