@@ -101,27 +101,33 @@ def calculate_payroll_for_employee(emp, year, month):
             unpaid_leave_count += 1
             continue
 
-        if a.status == 'Permission - 2 Hours' or a.is_permission:
-            # Approved 2-hour permission -> zero deduction
+        mins = a.total_work_minutes
+        has_permission = (a.status == 'Permission - 2 Hours' or a.is_permission)
+        if has_permission:
+            # Approved permission up to 2 hours -> full salary credit, zero deduction
             permission_days += 1
-        elif a.status in ('On Leave', 'Office Holiday') or a.leave_type == 'Paid Leave for the Office':
+            continue
+
+        if a.status in ('On Leave', 'Office Holiday') or a.leave_type == 'Paid Leave for the Office':
             if a.leave_type == 'Unpaid Leave' or a.status == 'Leave Without Pay (LWP)':
                 unpaid_leave_count += 1
             else:
                 paid_leave_count += 1
-        elif a.status == 'Present' or a.total_work_minutes >= 540:
-            # 9 working hours -> full working day, full-day salary (only if punch-out is present)
-            if a.out_time:
+        elif a.status == 'Present' or mins >= 540:
+            # 9 working hours -> full working day, full-day salary credit
+            if a.out_time or a.status == 'Present':
                 full_days += 1
             else:
                 incomplete_punch_days.append(d)
-        elif a.status == 'Half Day' or (270 <= a.total_work_minutes < 540):
-            # 4h 30m -> half working day, half-day salary (only if punch-out is present)
-            if a.out_time:
+        elif a.status == 'Half Day' or (270 <= mins < 540):
+            # 4h 30m -> half working day, half-day salary credit
+            if a.out_time or a.status == 'Half Day':
                 half_days += 1
             else:
                 incomplete_punch_days.append(d)
-        elif a.status in ('Absent', 'Missed Punch-In', 'Leave Without Pay (LWP)'):
+        elif a.status in ('Absent', 'Missed Punch-In', 'Leave Without Pay (LWP)') or (a.in_time and a.out_time and mins < 270):
+            absent_days += 1
+        elif not a.in_time:
             absent_days += 1
 
     # Add any approved leaves that didn't have an Attendance record row yet

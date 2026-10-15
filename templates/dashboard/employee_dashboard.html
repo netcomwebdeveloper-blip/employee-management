@@ -320,14 +320,18 @@
     </div>
   </div>
 
-  <!-- My Leave Details: 4 records initially, scroll for additional -->
+  <!-- My Leave & Permission Details: 4 records initially, scroll for additional -->
   <div class="panel">
-    <div class="panel-header">
+    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
       <div>
-        <h3>My Leave Details</h3>
-        
+        <h3 style="margin: 0;">My Leave & Permission Details</h3>
       </div>
-      <a href="{% url 'leave_management:list' %}" class="btn btn-outline btn-sm">Apply / View</a>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="openPermissionModal()" class="btn btn-primary btn-sm" style="background: #2563eb; border-color: #1d4ed8;">
+          ⏱️ Request Permission (Max 2h)
+        </button>
+        <a href="{% url 'leave_management:list' %}" class="btn btn-outline btn-sm">Apply / View</a>
+      </div>
     </div>
     <div class="scroll-container-4">
       <table class="data-table">
@@ -336,17 +340,29 @@
             <th>Type</th>
             <th>From</th>
             <th>To</th>
-            <th>Days</th>
+            <th>Duration</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
           {% for l in my_leave_details %}
           <tr>
-            <td><b>{{ l.leave_type }}</b></td>
+            <td>
+              {% if l.leave_type == 'Permission' %}
+                <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-weight: 700;">⏱️ Permission</span>
+              {% else %}
+                <b>{{ l.leave_type }}</b>
+              {% endif %}
+            </td>
             <td>{{ l.from_date|date:"M d, Y" }}</td>
             <td>{{ l.to_date|date:"M d, Y" }}</td>
-            <td><span class="badge badge-primary">{{ l.total_days }}d</span></td>
+            <td>
+              {% if l.leave_type == 'Permission' %}
+                <span class="badge" style="background: #e0f2fe; color: #0369a1;">{{ l.approval_type|default:"Up to 2h" }}</span>
+              {% else %}
+                <span class="badge badge-primary">{{ l.total_days }}d</span>
+              {% endif %}
+            </td>
             <td>
               <span class="badge {% if l.status == 'Approved' %}badge-success{% elif l.status == 'Rejected' %}badge-danger{% elif l.status == 'Cancelled' %}badge-gray{% else %}badge-warning{% endif %}">
                 {{ l.status }}
@@ -359,7 +375,7 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">No leave applications found.</td></tr>
+          <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">No leave or permission applications found.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -789,7 +805,145 @@
   function closeEmpImageModal() {
     document.getElementById('empWorkImageModal').classList.remove('active');
   }
+
+  function openPermissionModal() {
+    const modal = document.getElementById('permissionRequestModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closePermissionModal() {
+    const modal = document.getElementById('permissionRequestModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function calculatePermissionDuration() {
+    const startVal = document.getElementById('permStartTime').value;
+    const endVal = document.getElementById('permEndTime').value;
+    const badge = document.getElementById('permDurationBadge');
+    const errDiv = document.getElementById('permDurationError');
+    const btn = document.getElementById('permSubmitBtn');
+
+    if (!startVal || !endVal) {
+      if (badge) {
+        badge.textContent = '-- mins';
+        badge.style.background = '#dbeafe';
+        badge.style.color = '#1e40af';
+      }
+      if (errDiv) errDiv.style.display = 'none';
+      if (btn) btn.disabled = false;
+      return 0;
+    }
+
+    const [sh, sm] = startVal.split(':').map(Number);
+    const [eh, em] = endVal.split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    const diffMins = endMins - startMins;
+
+    if (diffMins <= 0) {
+      if (badge) {
+        badge.textContent = 'Invalid Range';
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#dc2626';
+      }
+      if (errDiv) {
+        errDiv.textContent = 'End time must be after start time.';
+        errDiv.style.display = 'block';
+      }
+      if (btn) btn.disabled = true;
+      return -1;
+    }
+
+    if (diffMins > 120) {
+      const h = Math.floor(diffMins / 60);
+      const m = diffMins % 60;
+      if (badge) {
+        badge.textContent = `${h}h ${m}m (Exceeds 2h Limit)`;
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#dc2626';
+      }
+      if (errDiv) {
+        errDiv.textContent = 'Permission cannot exceed 2 hours (120 minutes) per working day.';
+        errDiv.style.display = 'block';
+      }
+      if (btn) btn.disabled = true;
+      return diffMins;
+    }
+
+    const hours = Math.floor(diffMins / 60);
+    const remMins = diffMins % 60;
+    const label = hours > 0 ? (remMins > 0 ? `${hours}h ${remMins}m` : `${hours} hour${hours > 1 ? 's' : ''}`) : `${remMins} mins`;
+    if (badge) {
+      badge.textContent = label;
+      badge.style.background = '#d1fae5';
+      badge.style.color = '#065f46';
+    }
+    if (errDiv) errDiv.style.display = 'none';
+    if (btn) btn.disabled = false;
+    return diffMins;
+  }
+
+  function validatePermissionForm() {
+    const diff = calculatePermissionDuration();
+    if (diff <= 0 || diff > 120) {
+      alert('Please enter a valid time range of up to 2 hours (120 minutes).');
+      return false;
+    }
+    return true;
+  }
 </script>
+
+<!-- Permission Request Modal (Max 2 Hours) -->
+<div class="modal-overlay" id="permissionRequestModal">
+  <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 style="margin: 0; font-size: 16px;">⏱️ Request Permission (Up to 2 Hours)</h3>
+      <button type="button" class="modal-close" onclick="closePermissionModal()">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'leave_management:request_permission' %}" id="permissionRequestForm" onsubmit="return validatePermissionForm();">
+      {% csrf_token %}
+      <div class="modal-body" style="padding: 20px;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #1e40af; line-height: 1.45;">
+          ℹ️ Employees may request <b>up to 2 hours</b> of permission per working day for personal, official, or medical needs. Approved permission is credited with full pay (zero salary deduction).
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Permission Date</label>
+          <input type="date" name="date" id="permDate" value="{{ today|date:'Y-m-d' }}" class="form-input" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Start Time</label>
+            <input type="time" name="start_time" id="permStartTime" class="form-input" onchange="calculatePermissionDuration()" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">End Time</label>
+            <input type="time" name="end_time" id="permEndTime" class="form-input" onchange="calculatePermissionDuration()" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; color: #475569; font-weight: 600;">Total Requested Duration:</span>
+          <span id="permDurationBadge" class="badge" style="background: #dbeafe; color: #1e40af; font-size: 13px; font-weight: 700;">
+            -- mins
+          </span>
+        </div>
+        <div id="permDurationError" style="display: none; color: #dc2626; font-size: 12.5px; margin-top: -6px; margin-bottom: 10px; font-weight: 600;"></div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Reason for Permission</label>
+          <textarea name="reason" id="permReason" class="form-input" rows="3" placeholder="Explain the reason for permission (e.g. Doctor appointment, official bank visit, urgent personal errand)..." required></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-outline" onclick="closePermissionModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="permSubmitBtn" style="background: #2563eb; border-color: #1d4ed8;">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- Employee Work Image Lightbox Modal -->
 <div class="modal-overlay" id="empWorkImageModal" onclick="closeEmpImageModal()">

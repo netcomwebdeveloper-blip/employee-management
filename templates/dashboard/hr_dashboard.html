@@ -103,6 +103,30 @@
       </button>
     </div>
   </div>
+
+<!-- HR Quick-Jump Section Navigation Bar -->
+<div class="hr-section-nav" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 0 16px 0; margin-bottom: 8px; scrollbar-width: thin;">
+  <a href="#hrPunchCalendarSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    🕒 Punch & Calendar
+  </a>
+  <a href="#missingPunchOutSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #fca5a5; color: #991b1b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    ⚠️ Missing Punch-Outs
+  </a>
+  <a href="#staffLeaveRequestsSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    📝 Leave & Permissions
+  </a>
+  <a href="#staffWorkSubmissionsSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    💼 Work Submissions
+  </a>
+  <a href="#employeeMessagesSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    💬 Employee Enquiries
+  </a>
+  <a href="#hrReportsOverrideSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    📊 Reports & Audit Override
+  </a>
+  <a href="#dailyWorkPlanningSection" class="btn btn-outline btn-sm" style="background: #fff; border-color: #cbd5e1; color: #1e293b; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+    📋 Daily Work Planning
+  </a>
 </div>
 
 <!-- Metric KPI Cards -->
@@ -155,7 +179,7 @@
 </div>
 {% endif %}
 
-<div class="grid-2 grid-punch-calendar">
+<div class="grid-2 grid-punch-calendar" id="hrPunchCalendarSection">
   <!-- HR Live Clock & Self-Service Punch -->
   <div class="panel punch-panel">
     <div class="panel-header">
@@ -265,9 +289,8 @@
   </div>
 </div>
 
-{% if missing_punch_out_attendances %}
 <!-- Missing Punch-Outs Card: Pending HR Regularization -->
-<div class="panel" style="margin-bottom: 24px; border: 1px solid #fecaca; background: #fff5f5;">
+<div class="panel" id="missingPunchOutSection" style="margin-bottom: 24px; border: 1px solid #fecaca; background: #fff5f5;">
   <div class="panel-header" style="border-bottom: 1px solid #fee2e2; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
     <div>
       <h3 style="color: #991b1b; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
@@ -308,17 +331,22 @@
             </button>
           </td>
         </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: #64748b; padding: 18px;">
+            All punch-outs are recorded and complete today. Click "Enter Punch-Out Correction" to regularize any historical missing punch-out records.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-{% endif %}
 
 <!-- Leave Requests & Employee Work Details (Display only 5 records initially with scrolling) -->
 <div class="grid-2">
   <!-- Leave Requests: 5 records initially, scroll for additional -->
-  <div class="panel">
+  <div class="panel" id="staffLeaveRequestsSection">
     <div class="panel-header">
       <div>
         <h3>Staff Leave & Permission Requests</h3>
@@ -367,7 +395,7 @@
   </div>
 
   <!-- Employee Work Details: 5 records initially, scroll for additional -->
-  <div class="panel">
+  <div class="panel" id="staffWorkSubmissionsSection">
     <div class="panel-header">
       <div>
         <h3>Employee Work Details</h3>
@@ -500,7 +528,7 @@
 </div>
 
 <!-- Biometric Hardware Sync & Manual Attendance Correction -->
-<div class="grid-2">
+<div class="grid-2" id="hrReportsOverrideSection">
   <!-- Comprehensive HR Report Download -->
   <div class="panel">
     <div class="panel-header">
@@ -1410,7 +1438,13 @@
     document.getElementById('revBalance').textContent = balance;
     document.getElementById('revReason').textContent = reason;
     document.getElementById('revStatusSelect').value = 'Approved';
-    document.getElementById('revClassificationSelect').value = (leaveType === 'Sick Leave') ? 'Paid Sick Leave' : 'Paid Casual Leave';
+    if (leaveType === 'Permission') {
+      document.getElementById('revClassificationSelect').value = 'Approved Permission';
+    } else if (leaveType === 'Sick Leave') {
+      document.getElementById('revClassificationSelect').value = 'Paid Sick Leave';
+    } else {
+      document.getElementById('revClassificationSelect').value = 'Paid Casual Leave';
+    }
     onReviewStatusChange();
     document.getElementById('leaveReviewModal').classList.add('active');
   }
@@ -1424,10 +1458,15 @@
     const classGroup = document.getElementById('classificationGroup');
     const rejGroup = document.getElementById('rejectionGroup');
     const submitBtn = document.getElementById('revSubmitBtn');
+    const leaveType = document.getElementById('revLeaveType').textContent;
     if (status === 'Approved') {
       classGroup.style.display = 'block';
       rejGroup.style.display = 'none';
-      submitBtn.textContent = 'Approve Leave Request';
+      if (leaveType === 'Permission') {
+        submitBtn.textContent = 'Approve Permission Request';
+      } else {
+        submitBtn.textContent = 'Approve Leave Request';
+      }
       submitBtn.className = 'btn btn-success';
     } else {
       classGroup.style.display = 'none';
@@ -1494,9 +1533,10 @@
           <select name="classification" id="revClassificationSelect" class="form-select">
             <option value="Paid Casual Leave">Paid Casual Leave (Full Pay, Deducts Balance)</option>
             <option value="Paid Sick Leave">Paid Sick Leave (Full Pay)</option>
+            <option value="Approved Permission">Approved Permission (No Salary Deduction)</option>
           </select>
           <small style="color: var(--gray-600); display: block; margin-top: 4px;">
-            Classifying as <b>Paid Casual Leave</b> or <b>Paid Sick Leave</b> pays full salary with zero deduction.
+            Classifying as <b>Paid Casual Leave</b>, <b>Paid Sick Leave</b>, or <b>Approved Permission</b> pays full salary with zero deduction.
           </small>
         </div>
 

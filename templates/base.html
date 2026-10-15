@@ -41,6 +41,10 @@
           <span class="nav-icon">🏢</span>
           <span>Departments</span>
         </a>
+        <a href="{% url 'dashboard:index' %}#employeeMessagesSection" class="nav-link">
+          <span class="nav-icon">💬</span>
+          <span>Employee Enquiries</span>
+        </a>
 
         <div class="nav-label">Time & Leave</div>
         <a href="{% url 'attendance:list' %}" class="nav-link {% if request.resolver_match.app_name == 'attendance' and request.resolver_match.url_name == 'list' %}active{% endif %}">
@@ -51,9 +55,13 @@
           <span class="nav-icon">📝</span>
           <span>Daily Work</span>
         </a>
-        <a href="{% url 'leave_management:list' %}" class="nav-link {% if request.resolver_match.app_name == 'leave_management' %}active{% endif %}">
+        <a href="{% url 'leave_management:list' %}" class="nav-link {% if request.resolver_match.app_name == 'leave_management' and not request.GET.type %}active{% endif %}">
           <span class="nav-icon">📅</span>
           <span>Leave Requests</span>
+        </a>
+        <a href="{% url 'leave_management:list' %}?type=Permission" class="nav-link {% if request.GET.type == 'Permission' %}active{% endif %}">
+          <span class="nav-icon">⏱️</span>
+          <span>Permission Requests</span>
         </a>
 
         <div class="nav-label">Finance & Analytics</div>

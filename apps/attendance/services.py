@@ -136,13 +136,22 @@ def reset_daily_missed_punch_in_status(target_date=None):
     cutoff_time = time(12, 0)
     is_past_12pm = (now.time() >= cutoff_time)
 
-    # 1. Midnight reset / historical cleanup: finalize any past 'Pending Punch-In' records
-    past_pendings = Attendance.objects.filter(date__lt=today, status='Pending Punch-In')
-    for p_att in past_pendings:
+    # 1. Midnight reset / historical cleanup: finalize any past unpunched or incomplete punch records
+    past_unfinalized = Attendance.objects.filter(date__lt=today).exclude(status__in=['Present', 'Half Day', 'On Leave', 'Official Duty'])
+    for p_att in past_unfinalized:
+        if p_att.is_official_duty or p_att.is_approved_leave:
+            continue
+        # Employees who miss either punch-in or punch-out are automatically marked as Absent
         if not p_att.in_time:
-            p_att.status = 'Missed Punch-In'
-            p_att.update_source = 'Midnight Daily Auto-Reset'
-            p_att.save(update_fields=['status', 'update_source'])
+            if p_att.status not in ('Absent', 'Missed Punch-In'):
+                p_att.status = 'Absent'
+                p_att.update_source = 'Midnight Daily Auto-Reset'
+                p_att.save(update_fields=['status', 'update_source'])
+        elif p_att.in_time and not p_att.out_time:
+            if p_att.status != 'Absent':
+                p_att.status = 'Absent'
+                p_att.update_source = 'Midnight Daily Auto-Reset'
+                p_att.save(update_fields=['status', 'update_source'])
 
     # 2. All active employees across all roles: EMPLOYEE, HR, ADMIN
     active_employees = Employee.objects.filter(is_active_employee=True).select_related('user')

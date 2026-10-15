@@ -758,6 +758,10 @@ class ComprehensiveSystemTests(TestCase):
         self.assertIn('ADMIN Punch', att.update_source)
         self.assertIsNotNone(att.in_photo)
 
+        # Simulate punch-in 9 hours earlier to represent a full 9-hour duty shift
+        att.in_time = (timezone.localtime() - timedelta(hours=9, minutes=5)).time()
+        att.save(update_fields=['in_time'])
+
         # Admin Punches Out
         r_out = self.client.post('/attendance/punch/', {
             'action': 'punch_out',
