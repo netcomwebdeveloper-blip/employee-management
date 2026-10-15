@@ -116,13 +116,16 @@ def check_and_restore_casual_leave_on_attendance(employee, att_date, attendance_
 def reset_daily_missed_punch_in_status(target_date=None):
     """
     Evaluates and resets daily punch-in status for all active employees, HR staff, and administrators.
+    - Calculates attendance based on the system's local calendar day (12:00 AM to 11:59 PM).
     - Daily punch-in is mandatory for all employees, HR, and admins.
+    - Reset the daily attendance processing status at 12:00 AM midnight for the new local calendar day.
     - Reset the missed punch-in status daily at 12:00 PM according to system local time.
     - Before 12:00 PM local time: status is 'Pending Punch-In' for unpunched staff.
-    - Daily at 12:00 PM local time: any staff without in_time who is not on approved leave or official duty
-      has their status marked as 'Missed Punch-In' (prominently in red).
+    - Daily at 12:00 PM local time: any staff without in_time who is not on approved leave, official duty,
+      or office holiday has their status marked as 'Missed Punch-In' (prominently in red).
     - If someone has punched in but missing punch out: status is 'Missing Punch-Out' (prominently in red).
     - Historical attendance records (date < today) are strictly preserved without alteration or deletion.
+    - Any unpunched records from past days (date < today) are marked as Missed Punch-In / Leave Without Pay (LWP).
     """
     from datetime import time
     from apps.employees.models import Employee
@@ -133,7 +136,15 @@ def reset_daily_missed_punch_in_status(target_date=None):
     cutoff_time = time(12, 0)
     is_past_12pm = (now.time() >= cutoff_time)
 
-    # All active employees across all roles: EMPLOYEE, HR, ADMIN
+    # 1. Midnight reset / historical cleanup: finalize any past 'Pending Punch-In' records
+    past_pendings = Attendance.objects.filter(date__lt=today, status='Pending Punch-In')
+    for p_att in past_pendings:
+        if not p_att.in_time:
+            p_att.status = 'Missed Punch-In'
+            p_att.update_source = 'Midnight Daily Auto-Reset'
+            p_att.save(update_fields=['status', 'update_source'])
+
+    # 2. All active employees across all roles: EMPLOYEE, HR, ADMIN
     active_employees = Employee.objects.filter(is_active_employee=True).select_related('user')
 
     # Find today's approved leaves
@@ -145,12 +156,25 @@ def reset_daily_missed_punch_in_status(target_date=None):
         ).values_list('employee_id', flat=True)
     )
 
-    is_office_holiday = OfficePaidLeave.objects.filter(date=today).exists()
+    is_office_holiday = OfficePaidLeave.objects.filter(date=today).first()
     updated_count = 0
 
     for emp in active_employees:
-        # If on approved leave or office holiday, leave intact
-        if emp.id in approved_leave_emp_ids or is_office_holiday:
+        # If on approved leave, keep intact
+        if emp.id in approved_leave_emp_ids:
+            continue
+
+        # If today is an Office Paid Leave / holiday
+        if is_office_holiday:
+            att, created = Attendance.objects.get_or_create(employee=emp, date=today)
+            if not att.in_time and not att.out_time and att.status != 'On Leave':
+                att.status = 'On Leave'
+                att.is_approved_leave = True
+                att.leave_type = 'Paid Leave for the Office'
+                att.leave_reason = is_office_holiday.title
+                att.update_source = 'Office Paid Leave'
+                att.save()
+                updated_count += 1
             continue
 
         att = Attendance.objects.filter(employee=emp, date=today).first()
@@ -192,6 +216,125 @@ def reset_daily_missed_punch_in_status(target_date=None):
             updated_count += 1
 
     return updated_count
+
+
+def correct_missing_punch_out(employee, att_date, verified_out_time, reason, hr_user, ip_address=''):
+    """
+    Dedicated function allowing authorized HR staff and Administrators to manually enter
+    or correct the missing punch-out time for employees who completed punch-in but missed punch-out.
+    - Saves verified punch-out time without requiring new GPS or selfie from the employee.
+    - Records update_source as 'HR Manual Punch-Out Correction' (non-GPS / non-selfie).
+    - Writes an immutable audit trail entry containing HR user ID, timestamp, original and updated details, and reason.
+    - Automatically updates working minutes and sets status to Present (>=9h) or Half Day (>=4.5h).
+    - Restores casual leave balance if deducted for that date.
+    - Strictly prevents unauthorized employee self-edits.
+    """
+    if not employee or not att_date or not verified_out_time:
+        return False, "Employee, attendance date, and verified punch-out time are required."
+
+    att = Attendance.objects.filter(employee=employee, date=att_date).first()
+    if not att:
+        return False, f"No attendance record found for {employee.display_name()} on {att_date}."
+
+    if not att.in_time:
+        return False, f"Employee {employee.display_name()} has no recorded punch-in on {att_date}. Punch-out can only be corrected for an existing punch-in."
+
+    old_val = (
+        f"in: {att.in_time}, out: {att.out_time}, status: {att.status}, "
+        f"source: {att.update_source}, updated_by: {att.updated_by_id if att.updated_by else 'None'}"
+    )
+
+    att.out_time = verified_out_time
+    att.updated_by = hr_user
+    att.update_source = 'HR Manual Punch-Out Correction'
+
+    # Compute working hours
+    mins = att.total_work_minutes
+    if mins >= 540:
+        att.status = 'Present'
+    elif mins >= 270:
+        att.status = 'Half Day'
+    else:
+        att.status = 'Present'
+
+    att.save()
+
+    # Create immutable audit log entry
+    AttendanceAuditLog.objects.create(
+        attendance=att,
+        changed_by=hr_user,
+        action='HR_MANUAL_PUNCH_OUT_CORRECTION',
+        old_values=old_val,
+        new_values=(
+            f"out_time: {att.out_time}, status: {att.status}, work_time: {att.total_work_time}, "
+            f"reason: {reason}, source: HR Manual Punch-Out Correction (Non-GPS / Non-Selfie)"
+        ),
+        ip_address=ip_address or ''
+    )
+
+    # Check and restore casual leave balance if deducted
+    restored, _ = check_and_restore_casual_leave_on_attendance(employee, att_date, att, changed_by=hr_user)
+
+    msg = (
+        f"Successfully corrected punch-out for {employee.display_name()} on {att_date} "
+        f"to {verified_out_time.strftime('%I:%M %p')}. Total working time: {att.total_work_time} (Status: {att.status}). "
+        f"Audit trail recorded under HR User '{hr_user.username}'."
+    )
+    if restored:
+        msg += f" (+1 Casual Leave day restored to balance: {employee.casual_leave_balance})."
+
+    return True, msg
+
+
+def mark_office_holiday_calendar(target_date, title='Office Paid Holiday', description='', marked_by=None):
+    """
+    Allows HR and Administrators to mark a date as an official office holiday / approved non-working day.
+    - Saves to OfficePaidLeave calendar.
+    - Automatically updates attendance across all active employees to 'On Leave' (Paid Leave for the Office).
+    - Preserves valid working punches (if an employee actually worked on that holiday).
+    - Restores any personal casual leaves deducted for that date.
+    - Displays status prominently in green with full paid credit, without incorrectly marking as LWP.
+    """
+    from apps.leave_management.models import OfficePaidLeave, LeaveRequest
+    opl, created = OfficePaidLeave.objects.get_or_create(
+        date=target_date,
+        defaults={'title': title, 'description': description, 'marked_by': marked_by}
+    )
+    if not created:
+        opl.title = title
+        opl.description = description
+        opl.marked_by = marked_by
+        opl.save()
+
+    from apps.employees.models import Employee
+    for emp in Employee.objects.filter(is_active_employee=True):
+        # Restore casual leave if employee had applied for personal leave on this office holiday
+        for leave in LeaveRequest.objects.filter(employee=emp, from_date__lte=target_date, to_date__gte=target_date, status='Approved'):
+            if 'Casual' in leave.leave_type or leave.is_paid:
+                emp.casual_leave_balance += 1
+                emp.save(update_fields=['casual_leave_balance'])
+            if leave.from_date == leave.to_date == target_date:
+                leave.status = 'Cancelled'
+                leave.rejection_reason = f"Cancelled: Converted to Office Paid Holiday ({title})"
+                leave.save()
+            else:
+                leave.total_days = max(0, leave.total_days - 1)
+                leave.save()
+
+        att, _ = Attendance.objects.get_or_create(employee=emp, date=target_date)
+        # Preserve existing valid work punches
+        if att.in_time and att.out_time and att.total_work_minutes >= 270:
+            continue
+
+        att.status = 'On Leave'
+        att.is_approved_leave = True
+        att.leave_type = 'Paid Leave for the Office'
+        att.leave_reason = title
+        att.updated_by = marked_by
+        att.update_source = 'Office Paid Leave'
+        att.save()
+
+    return opl
 
 
 def mark_employee_official_duty(employee, att_date, duty_title='Official Office Duty', notes='', marked_by=None):

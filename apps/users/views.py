@@ -36,9 +36,10 @@ def custom_login_view(request):
     return render(request, 'users/login.html')
 
 def custom_logout_view(request):
-    """Secure logout view redirecting back to login."""
+    """Secure logout view clearing session and redirecting back to login."""
     if request.user.is_authenticated:
         logout(request)
+        request.session.flush()
         messages.info(request, "You have been logged out successfully.")
     return redirect('login')
 

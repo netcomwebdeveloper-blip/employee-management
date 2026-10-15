@@ -89,6 +89,18 @@
   </div>
 </div>
 
+{% if today_office_leave %}
+<div class="alert alert-success" style="margin-bottom: 20px; background: #ecfdf5; border: 2px solid #059669; border-radius: 8px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(5,150,105,0.12); color: #065f46;">
+  <span style="font-size: 26px;">🏛️</span>
+  <div>
+    <div style="font-weight: 700; color: #065f46; font-size: 15px;">Official Office Holiday: {{ today_office_leave.title }} (Approved Paid Leave)</div>
+    <div style="color: #047857; font-size: 13px; margin-top: 2px;">
+      Today is an official office holiday / approved non-working day. All staff receive full-day paid salary credit (Green Status) without being marked as Leave Without Pay (LWP).
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if has_missed_punch_in or attendance.status == 'Missed Punch-In' %}
 <div class="alert alert-danger" style="margin-bottom: 20px; background: #fef2f2; border: 2px solid #dc2626; border-radius: 8px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 4px 12px rgba(220,38,38,0.12);">
   <div style="display: flex; align-items: center; gap: 12px;">
@@ -686,6 +698,45 @@
   let punchSubmitting = false;
   function executePunch(actionType) {
     if (punchSubmitting) return;
+
+    // Validate GPS access
+    if (!currentLatitude || !currentLongitude) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nGPS location access is unavailable, invalid, or was denied. Please allow location access in your browser settings to record your punch.");
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            currentLatitude = pos.coords.latitude;
+            currentLongitude = pos.coords.longitude;
+            if (gpsText) gpsText.textContent = `GPS: ${currentLatitude.toFixed(4)}, ${currentLongitude.toFixed(4)}`;
+            if (gpsBadge) { gpsBadge.style.background = 'rgba(34, 197, 94, 0.2)'; gpsBadge.style.color = '#86efac'; }
+          },
+          function(err) {
+            console.error(err);
+          },
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      }
+      return;
+    }
+
+    // Validate Camera and capture live selfie
+    if (!cameraStream || !cameraVideo || cameraVideo.videoWidth <= 0) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nLive selfie capture is unavailable or camera permission was denied. Please ensure your camera is enabled to record your punch.");
+      return;
+    }
+
+    const canvas = document.getElementById('cameraCanvas');
+    canvas.width = cameraVideo.videoWidth;
+    canvas.height = cameraVideo.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+    const photoData = canvas.toDataURL('image/jpeg', 0.85);
+
+    if (!photoData || photoData.length < 50) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nFailed to capture live selfie frame. Please ensure camera preview is active and try again.");
+      return;
+    }
+
     punchSubmitting = true;
 
     const inBtn = document.getElementById('empPunchInBtn');
@@ -699,20 +750,10 @@
     const lonInput = document.getElementById('longitudeInput');
     const locInput = document.getElementById('locationInput');
 
-    if (currentLatitude && currentLongitude) {
-      latInput.value = currentLatitude;
-      lonInput.value = currentLongitude;
-      locInput.value = `Lat: ${currentLatitude}, Lon: ${currentLongitude}`;
-    }
-
-    if (cameraStream && cameraVideo && cameraVideo.videoWidth > 0) {
-      const canvas = document.getElementById('cameraCanvas');
-      canvas.width = cameraVideo.videoWidth;
-      canvas.height = cameraVideo.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
-      photoInput.value = canvas.toDataURL('image/jpeg', 0.85);
-    }
+    latInput.value = currentLatitude;
+    lonInput.value = currentLongitude;
+    locInput.value = `Lat: ${currentLatitude}, Lon: ${currentLongitude}`;
+    photoInput.value = photoData;
 
     let hiddenAction = document.createElement('input');
     hiddenAction.type = 'hidden';

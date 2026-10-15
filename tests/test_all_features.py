@@ -828,23 +828,26 @@ class ComprehensiveSystemTests(TestCase):
 
     def test_strict_once_per_day_punch_rules_and_error_messages(self):
         self.client.login(username='emp_user', password='emp12345')
+        fake_photo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        punch_in_data = {'action': 'punch_in', 'photo_data': fake_photo, 'latitude': '12.9716', 'longitude': '77.5946'}
         # 1. First punch in -> Success
-        r1 = self.client.post('/attendance/punch/', {'action': 'punch_in'}, follow=True)
+        r1 = self.client.post('/attendance/punch/', punch_in_data, follow=True)
         messages1 = [str(m) for m in r1.context['messages']]
         self.assertTrue(any("Punch In recorded" in m for m in messages1))
 
         # 2. Second punch in -> Exact error message
-        r2 = self.client.post('/attendance/punch/', {'action': 'punch_in'}, follow=True)
+        r2 = self.client.post('/attendance/punch/', punch_in_data, follow=True)
         messages2 = [str(m) for m in r2.context['messages']]
         self.assertIn("You have already punched in for today.", messages2)
 
         # 3. First punch out -> Success
-        r3 = self.client.post('/attendance/punch/', {'action': 'punch_out'}, follow=True)
+        punch_out_data = {'action': 'punch_out', 'photo_data': fake_photo, 'latitude': '12.9716', 'longitude': '77.5946'}
+        r3 = self.client.post('/attendance/punch/', punch_out_data, follow=True)
         messages3 = [str(m) for m in r3.context['messages']]
         self.assertTrue(any("Punch Out recorded" in m for m in messages3))
 
         # 4. Second punch out -> Exact error message
-        r4 = self.client.post('/attendance/punch/', {'action': 'punch_out'}, follow=True)
+        r4 = self.client.post('/attendance/punch/', punch_out_data, follow=True)
         messages4 = [str(m) for m in r4.context['messages']]
         self.assertIn("You have already punched out for today.", messages4)
         self.client.logout()

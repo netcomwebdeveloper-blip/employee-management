@@ -242,3 +242,140 @@ class AttendanceAndMessagingTests(TestCase):
         notif.refresh_from_db()
         self.assertTrue(notif.is_read)
         self.client.logout()
+
+    def test_punch_fails_when_gps_or_selfie_missing(self):
+        self.client.login(username='emp_john', password='john12345')
+        fake_photo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+        # 1. Missing GPS
+        r1 = self.client.post('/attendance/punch/', {'action': 'punch_in', 'photo_data': fake_photo}, follow=True)
+        messages1 = [str(m) for m in r1.context['messages']]
+        self.assertTrue(any("GPS location and a live selfie are mandatory" in m for m in messages1))
+
+        # 2. Missing Selfie
+        r2 = self.client.post('/attendance/punch/', {'action': 'punch_in', 'latitude': '12.9716', 'longitude': '77.5946'}, follow=True)
+        messages2 = [str(m) for m in r2.context['messages']]
+        self.assertTrue(any("GPS location and a live selfie are mandatory" in m for m in messages2))
+
+        # 3. Both present -> Success
+        r3 = self.client.post('/attendance/punch/', {
+            'action': 'punch_in',
+            'photo_data': fake_photo,
+            'latitude': '12.9716',
+            'longitude': '77.5946'
+        }, follow=True)
+        messages3 = [str(m) for m in r3.context['messages']]
+        self.assertTrue(any("Punch In recorded" in m for m in messages3))
+        self.client.logout()
+
+    def test_hr_manual_punch_out_correction_and_audit_trail(self):
+        target_date = date(2026, 9, 20)
+        # Employee has punch-in but missed punch-out
+        att = Attendance.objects.create(
+            employee=self.emp_profile,
+            date=target_date,
+            in_time=time(9, 0)
+        )
+        self.assertEqual(att.status, 'Missing Punch-Out')
+
+        # 1. Employee cannot correct attendance (unauthorized)
+        self.client.login(username='emp_john', password='john12345')
+        r_unauth = self.client.post('/attendance/correct-punch-out/', {
+            'employee_id': self.emp_profile.id,
+            'date': target_date.strftime('%Y-%m-%d'),
+            'out_time': '18:15',
+            'reason': 'Self regularization'
+        })
+        self.assertEqual(r_unauth.status_code, 302)
+        self.client.logout()
+
+        # 2. HR corrects punch out
+        self.client.login(username='hr_user', password='hr12345')
+        r_hr = self.client.post('/attendance/correct-punch-out/', {
+            'employee_id': self.emp_profile.id,
+            'date': target_date.strftime('%Y-%m-%d'),
+            'out_time': '18:15',
+            'reason': 'Employee forgot punch-out; verified via gate security log'
+        }, follow=True)
+        self.assertEqual(r_hr.status_code, 200)
+        self.client.logout()
+
+        # Verify attendance record updated
+        att.refresh_from_db()
+        self.assertEqual(att.out_time, time(18, 15))
+        self.assertEqual(att.status, 'Present')
+        self.assertEqual(att.total_work_minutes, 555)  # 9h 15m >= 9h -> full day
+        self.assertTrue(att.is_full_day)
+
+        # Verify audit log created
+        log = AttendanceAuditLog.objects.filter(attendance=att, action='HR_MANUAL_PUNCH_OUT_CORRECTION').first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.changed_by, self.hr_user)
+        self.assertIn('gate security log', log.new_values)
+        self.assertIn('18:15', log.new_values)
+
+    def test_salary_calculation_tiers_and_permissions(self):
+        # 1. >= 9 hours -> Full day salary credit (0 deduction)
+        d1 = date(2026, 8, 1)
+        Attendance.objects.create(
+            employee=self.emp_profile,
+            date=d1,
+            in_time=time(9, 0),
+            out_time=time(18, 0)  # exactly 9 hours (540 mins)
+        )
+
+        # 2. >= 4.5 hours and < 9 hours -> Half day salary credit (0.5 deduction)
+        d2 = date(2026, 8, 2)
+        Attendance.objects.create(
+            employee=self.emp_profile,
+            date=d2,
+            in_time=time(9, 0),
+            out_time=time(14, 0)  # 5 hours (300 mins)
+        )
+
+        # 3. Approved permission <= 2 hours -> Full salary credit (0 deduction)
+        d3 = date(2026, 8, 3)
+        Attendance.objects.create(
+            employee=self.emp_profile,
+            date=d3,
+            in_time=time(9, 0),
+            out_time=time(16, 30),  # 7.5 hours
+            is_permission=True,
+            permission_hours=Decimal('2.00')
+        )
+
+        payroll_data = calculate_payroll_for_employee(self.emp_profile, 2026, 8)
+        self.assertEqual(payroll_data['full_days'], 1)  # d1 (9h)
+        self.assertEqual(payroll_data['half_days'], 1)  # d2 (5h)
+        self.assertEqual(payroll_data['permission_days'], 1)  # d3 (7.5h + 2h permission -> 0 deduction)
+
+    def test_office_leave_calendar_green_status_and_midnight_reset(self):
+        from apps.attendance.services import mark_office_holiday_calendar, reset_daily_missed_punch_in_status
+        from apps.leave_management.models import OfficePaidLeave
+        target_date = date(2026, 11, 10)
+
+        # Mark office holiday via calendar service
+        holiday = mark_office_holiday_calendar(
+            target_date=target_date,
+            title='National Innovation Day',
+            description='Approved office-wide celebration',
+            marked_by=self.hr_user
+        )
+        self.assertIsNotNone(holiday)
+
+        # Verify all employees have attendance marked On Leave / Paid Leave for the Office
+        att = Attendance.objects.get(employee=self.emp_profile, date=target_date)
+        self.assertEqual(att.status, 'On Leave')
+        self.assertEqual(att.leave_type, 'Paid Leave for the Office')
+
+        # Verify payroll gives full credit (0 deduction, not LWP)
+        payroll_data = calculate_payroll_for_employee(self.emp_profile, 2026, 11)
+        self.assertEqual(payroll_data['approved_leaves'], 1)
+        self.assertEqual(payroll_data['absent_days'], 0)
+
+        # Midnight reset preserves past records
+        count = reset_daily_missed_punch_in_status(target_date=date(2026, 11, 11))
+        att.refresh_from_db()
+        self.assertEqual(att.status, 'On Leave')
+        self.assertEqual(att.leave_type, 'Paid Leave for the Office')
+

@@ -104,8 +104,8 @@ def calculate_payroll_for_employee(emp, year, month):
         if a.status == 'Permission - 2 Hours' or a.is_permission:
             # Approved 2-hour permission -> zero deduction
             permission_days += 1
-        elif a.status == 'On Leave':
-            if a.leave_type == 'Unpaid Leave':
+        elif a.status in ('On Leave', 'Office Holiday') or a.leave_type == 'Paid Leave for the Office':
+            if a.leave_type == 'Unpaid Leave' or a.status == 'Leave Without Pay (LWP)':
                 unpaid_leave_count += 1
             else:
                 paid_leave_count += 1
@@ -121,7 +121,7 @@ def calculate_payroll_for_employee(emp, year, month):
                 half_days += 1
             else:
                 incomplete_punch_days.append(d)
-        elif a.status in ('Absent', 'Missed Punch-In'):
+        elif a.status in ('Absent', 'Missed Punch-In', 'Leave Without Pay (LWP)'):
             absent_days += 1
 
     # Add any approved leaves that didn't have an Attendance record row yet
@@ -129,6 +129,10 @@ def calculate_payroll_for_employee(emp, year, month):
     unlinked_unpaid = len(unpaid_leave_days - seen_attendance_days)
     total_paid_leaves = paid_leave_count + unlinked_paid
     total_unpaid_leaves = unpaid_leave_count + unlinked_unpaid
+
+    # Uncorrected missing punch-outs default to Leave Without Pay (LWP) per policy
+    unique_incomplete_days = sorted(list(set(incomplete_punch_days)))
+    total_unpaid_leaves += len(unique_incomplete_days)
 
     half_day_deduction = (Decimal(str(half_days)) * Decimal('0.5') * daily_rate).quantize(Decimal('0.01'))
     absent_deduction = (Decimal(str(absent_days)) * daily_rate).quantize(Decimal('0.01'))
@@ -138,19 +142,18 @@ def calculate_payroll_for_employee(emp, year, month):
     total_deductions = statutory_deductions + attendance_deductions
     net_salary = max(Decimal('0.00'), gross_salary - total_deductions)
 
-    unique_incomplete_days = sorted(list(set(incomplete_punch_days)))
     remarks = (
         f"Attended: Full Days (9h+): {full_days}, "
         f"Half Days (4.5h+): {half_days} (-₹{half_day_deduction:.2f}), "
         f"Permission (2h): {permission_days} (Full Pay), "
-        f"Paid Leaves: {total_paid_leaves} (Full Pay), "
-        f"Unpaid Leaves: {total_unpaid_leaves} (-₹{unpaid_leave_deduction:.2f}), "
+        f"Paid Leaves & Office Holidays: {total_paid_leaves} (Full Pay), "
+        f"Unpaid Leaves / LWP: {total_unpaid_leaves} (-₹{unpaid_leave_deduction:.2f}), "
         f"Absents/Missed Punch-In: {absent_days} (-₹{absent_deduction:.2f})."
     )
     if unique_incomplete_days:
         remarks += (
             f" [NOTICE: Incomplete attendance (missing punch-out) on day(s) {unique_incomplete_days}. "
-            f"Working hours and salary were NOT finalized for these days. Please contact HR to enter or correct missing punch-out time manually.]"
+            f"Working hours and salary were NOT finalized for these days. By policy, uncorrected incomplete punches are treated as Leave Without Pay (LWP) until an authorized HR staff member verifies and enters the manual punch-out correction. Please contact HR to enter or correct missing punch-out time manually.]"
         )
 
     return {

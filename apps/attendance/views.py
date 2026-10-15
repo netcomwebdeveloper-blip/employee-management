@@ -11,7 +11,13 @@ from apps.employees.models import Employee
 from .models import Attendance, DailyWork, AttendanceAuditLog, BiometricDevice
 from .forms import ManualAttendanceForm, DailyWorkForm, BiometricDeviceForm
 from .biometric_service import test_device_connection, sync_biometric_device
-from .services import check_and_restore_casual_leave_on_attendance, reset_daily_missed_punch_in_status, mark_employee_official_duty
+from .services import (
+    check_and_restore_casual_leave_on_attendance,
+    reset_daily_missed_punch_in_status,
+    mark_employee_official_duty,
+    correct_missing_punch_out,
+    mark_office_holiday_calendar,
+)
 
 
 def parse_base64_image(data_uri, name_prefix):
@@ -33,8 +39,11 @@ def parse_base64_image(data_uri, name_prefix):
 @login_required
 def punch_view(request):
     """
-    Handles employee or HR instant punch-in and punch-out.
-    Captures live camera photo and GPS location coordinates, storing them in the database.
+    Handles employee, HR, and administrator mandatory punch-in and punch-out.
+    Enforces valid GPS location access and live selfie capture for every punch.
+    If GPS access or selfie capture is unavailable, invalid, or denied, prevents the punch action
+    and displays a clear error message explaining that both GPS location and a live selfie are mandatory.
+    Prevents duplicate punch-in and punch-out submissions.
     """
     profile = getattr(request.user, 'employee', None)
     if not profile:
@@ -65,77 +74,142 @@ def punch_view(request):
     client_ip = request.META.get('REMOTE_ADDR', '')
 
     if action == 'punch_in':
+        # Prevent duplicate punch-in
         if attendance.in_time:
             messages.error(request, "You have already punched in for today.")
-        else:
-            old_val = f"in: None, out: {attendance.out_time}"
-            attendance.in_time = now_time
-            # Punch in is recorded, punch out is marked as missing until completed
-            attendance.status = 'Missing Punch-Out'
-            attendance.update_source = f"{profile.role} Punch"
+            return redirect('dashboard:index')
 
-            if photo_data:
-                photo_file = parse_base64_image(photo_data, f"in_{profile.employee_code}")
-                if photo_file:
-                    attendance.in_photo = photo_file
+        # Strictly enforce mandatory GPS coordinates and live selfie capture
+        if not photo_data or not parse_base64_image(photo_data, f"in_{profile.employee_code}"):
+            messages.error(request, "Both GPS location and a live selfie are mandatory. Live selfie capture is unavailable, invalid, or was not provided.")
+            return redirect('dashboard:index')
 
-            if latitude and longitude:
-                attendance.in_latitude = latitude
-                attendance.in_longitude = longitude
-                attendance.in_location = loc_desc or f"GPS: {latitude}, {longitude}"
+        if latitude is None or longitude is None:
+            messages.error(request, "Both GPS location and a live selfie are mandatory. Valid GPS location access was not provided or was denied.")
+            return redirect('dashboard:index')
 
-            attendance.save()
+        photo_file = parse_base64_image(photo_data, f"in_{profile.employee_code}")
+        old_val = f"in: None, out: {attendance.out_time}"
+        attendance.in_time = now_time
+        attendance.status = 'Missing Punch-Out'
+        attendance.update_source = f"{profile.role} Punch (GPS/Selfie)"
+        attendance.in_photo = photo_file
+        attendance.in_latitude = latitude
+        attendance.in_longitude = longitude
+        attendance.in_location = loc_desc or f"GPS: {latitude}, {longitude}"
+        attendance.save()
 
-            # Record audit log
-            AttendanceAuditLog.objects.create(
-                attendance=attendance,
-                changed_by=request.user,
-                action='PUNCH_IN',
-                old_values=old_val,
-                new_values=f"Time: {now_time}, GPS: ({latitude}, {longitude}), Location: {attendance.in_location}",
-                ip_address=client_ip
-            )
-            messages.success(request, f"Punch In recorded at {now_time.strftime('%I:%M %p')} with photo & GPS verification.")
+        # Record audit log
+        AttendanceAuditLog.objects.create(
+            attendance=attendance,
+            changed_by=request.user,
+            action='PUNCH_IN',
+            old_values=old_val,
+            new_values=f"Time: {now_time}, GPS: ({latitude}, {longitude}), Location: {attendance.in_location}, Selfie: Verified",
+            ip_address=client_ip
+        )
+        messages.success(request, f"Punch In recorded at {now_time.strftime('%I:%M %p')} with verified live selfie and GPS location.")
 
     elif action == 'punch_out':
+        # Validate that punch-in exists and punch-out has not already occurred
         if not attendance.in_time:
             messages.error(request, "Please punch in before recording punch out.")
-        elif attendance.out_time:
+            return redirect('dashboard:index')
+
+        if attendance.out_time:
             messages.error(request, "You have already punched out for today.")
-        else:
-            old_val = f"in: {attendance.in_time}, out: None"
-            attendance.out_time = now_time
-            attendance.update_source = f"{profile.role} Punch"
+            return redirect('dashboard:index')
 
-            if photo_data:
-                photo_file = parse_base64_image(photo_data, f"out_{profile.employee_code}")
-                if photo_file:
-                    attendance.out_photo = photo_file
+        # Strictly enforce mandatory GPS coordinates and live selfie capture
+        if not photo_data or not parse_base64_image(photo_data, f"out_{profile.employee_code}"):
+            messages.error(request, "Both GPS location and a live selfie are mandatory. Live selfie capture is unavailable, invalid, or was not provided.")
+            return redirect('dashboard:index')
 
-            if latitude and longitude:
-                attendance.out_latitude = latitude
-                attendance.out_longitude = longitude
-                attendance.out_location = loc_desc or f"GPS: {latitude}, {longitude}"
+        if latitude is None or longitude is None:
+            messages.error(request, "Both GPS location and a live selfie are mandatory. Valid GPS location access was not provided or was denied.")
+            return redirect('dashboard:index')
 
-            attendance.save()
+        photo_file = parse_base64_image(photo_data, f"out_{profile.employee_code}")
+        old_val = f"in: {attendance.in_time}, out: None"
+        attendance.out_time = now_time
+        attendance.update_source = f"{profile.role} Punch (GPS/Selfie)"
+        attendance.out_photo = photo_file
+        attendance.out_latitude = latitude
+        attendance.out_longitude = longitude
+        attendance.out_location = loc_desc or f"GPS: {latitude}, {longitude}"
+        attendance.save()
 
-            # Record audit log
-            AttendanceAuditLog.objects.create(
-                attendance=attendance,
-                changed_by=request.user,
-                action='PUNCH_OUT',
-                old_values=old_val,
-                new_values=f"Time: {now_time}, GPS: ({latitude}, {longitude}), Duration: {attendance.total_work_time}",
-                ip_address=client_ip
-            )
-            messages.success(request, f"Punch Out recorded at {now_time.strftime('%I:%M %p')}. Total: {attendance.total_work_time}")
+        # Record audit log
+        AttendanceAuditLog.objects.create(
+            attendance=attendance,
+            changed_by=request.user,
+            action='PUNCH_OUT',
+            old_values=old_val,
+            new_values=f"Time: {now_time}, GPS: ({latitude}, {longitude}), Duration: {attendance.total_work_time}, Selfie: Verified",
+            ip_address=client_ip
+        )
+        messages.success(request, f"Punch Out recorded at {now_time.strftime('%I:%M %p')}. Total: {attendance.total_work_time}")
 
-            # Automatic Casual Leave restoration if employee applied for leave but attended office
-            restored, msg = check_and_restore_casual_leave_on_attendance(profile, today, attendance, changed_by=request.user)
-            if restored:
-                messages.info(request, f"Notice: Casual leave for today was automatically cancelled because you attended office and completed {attendance.total_work_time}. 1 day has been restored to your Casual Leave balance! (New Balance: {profile.casual_leave_balance})")
+        # Automatic Casual Leave restoration if employee applied for leave but attended office
+        restored, msg = check_and_restore_casual_leave_on_attendance(profile, today, attendance, changed_by=request.user)
+        if restored:
+            messages.info(request, f"Notice: Casual leave for today was automatically cancelled because you attended office and completed {attendance.total_work_time}. 1 day has been restored to your Casual Leave balance! (New Balance: {profile.casual_leave_balance})")
 
     return redirect('dashboard:index')
+
+
+@login_required
+@hr_or_admin_required
+def correct_punch_out(request):
+    """
+    Dedicated view allowing authorized HR staff and Administrators to manually enter
+    or correct missing punch-out times for employees who punched in but missed punch-out.
+    Enforces audit logging with HR user ID, timestamp, original and updated details, and reason.
+    Strictly restricted from regular employees. No GPS/selfie required for historical HR corrections.
+    """
+    if request.method == 'POST':
+        emp_id = request.POST.get('employee_id')
+        date_str = request.POST.get('date')
+        out_time_str = request.POST.get('out_time')
+        reason = request.POST.get('reason', '').strip()
+
+        if not emp_id or not date_str or not out_time_str or not reason:
+            messages.error(request, "Employee, Date, Verified Punch-Out Time, and Correction Reason are all required.")
+            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
+
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid date format. Expected YYYY-MM-DD.")
+            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
+
+        try:
+            time_parts = [int(p) for p in out_time_str.split(':')]
+            from datetime import time as dt_time
+            if len(time_parts) >= 2:
+                verified_time = dt_time(time_parts[0], time_parts[1])
+            else:
+                raise ValueError()
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid time format. Expected HH:MM (e.g. 18:00).")
+            return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
+
+        employee = get_object_or_404(Employee, id=emp_id)
+        client_ip = request.META.get('REMOTE_ADDR', '')
+        success, msg = correct_missing_punch_out(
+            employee=employee,
+            att_date=target_date,
+            verified_out_time=verified_time,
+            reason=reason,
+            hr_user=request.user,
+            ip_address=client_ip
+        )
+        if success:
+            messages.success(request, msg)
+        else:
+            messages.error(request, msg)
+
+    return redirect(request.META.get('HTTP_REFERER') or 'dashboard:index')
 
 
 @login_required

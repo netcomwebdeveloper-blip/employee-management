@@ -398,36 +398,47 @@ def admin_dashboard(request, profile):
         messages.success(request, f"Employee {target_emp.display_name()} ({target_emp.employee_code}) details and leave balance updated successfully.")
         return redirect('dashboard:index')
 
-    # 3b. Handle Mark Paid Leave for the Office
+    # 3b. Handle Mark Paid Leave for the Office (Admin)
     if request.method == 'POST' and request.POST.get('action') == 'mark_office_paid_leave':
         leave_date_str = request.POST.get('date')
         title = request.POST.get('title', '').strip() or 'Paid Leave for the Office'
         description = request.POST.get('description', '').strip()
         try:
             target_date = datetime.strptime(leave_date_str, '%Y-%m-%d').date()
-            opl, created = OfficePaidLeave.objects.get_or_create(
-                date=target_date,
-                defaults={'title': title, 'description': description, 'marked_by': request.user}
-            )
-            if not created:
-                opl.title = title
-                opl.description = description
-                opl.marked_by = request.user
-                opl.save()
-
-            for emp in Employee.objects.filter(is_active_employee=True):
-                att, _ = Attendance.objects.get_or_create(employee=emp, date=target_date)
-                att.status = 'On Leave'
-                att.is_approved_leave = True
-                att.leave_type = 'Paid Leave for the Office'
-                att.leave_reason = title
-                att.updated_by = request.user
-                att.update_source = 'Office Paid Leave'
-                att.save()
-
-            messages.success(request, f"Successfully marked {target_date} as '{title}' (Paid Leave for the Office). Synchronized with attendance, calendars, and payroll.")
+            from apps.attendance.services import mark_office_holiday_calendar
+            mark_office_holiday_calendar(target_date, title=title, description=description, marked_by=request.user)
+            messages.success(request, f"Successfully marked {target_date} as '{title}' (Approved Office Paid Holiday). Synchronized with attendance, calendars, and payroll.")
         except Exception as e:
             messages.error(request, f"Failed to mark Office Paid Leave: {e}")
+        return redirect('dashboard:index')
+
+    # 3b-2. Handle Manual Punch-Out Correction (Admin)
+    if request.method == 'POST' and request.POST.get('action') == 'correct_punch_out':
+        emp_id = request.POST.get('employee_id')
+        date_str = request.POST.get('date')
+        out_time_str = request.POST.get('out_time')
+        reason = request.POST.get('reason', '').strip()
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            time_parts = [int(p) for p in out_time_str.split(':')]
+            from datetime import time as dt_time
+            verified_time = dt_time(time_parts[0], time_parts[1])
+            target_emp = get_object_or_404(Employee, id=emp_id)
+            from apps.attendance.services import correct_missing_punch_out
+            success, msg = correct_missing_punch_out(
+                employee=target_emp,
+                att_date=target_date,
+                verified_out_time=verified_time,
+                reason=reason,
+                hr_user=request.user,
+                ip_address=request.META.get('REMOTE_ADDR', '')
+            )
+            if success:
+                messages.success(request, msg)
+            else:
+                messages.error(request, msg)
+        except Exception as e:
+            messages.error(request, f"Failed to correct punch-out: {e}")
         return redirect('dashboard:index')
 
     if request.method == 'POST' and request.POST.get('action') == 'delete_office_paid_leave':
@@ -590,6 +601,8 @@ def admin_dashboard(request, profile):
         'device_form': device_form,
         'manual_form': manual_form,
         'all_office_paid_leaves': OfficePaidLeave.objects.all().order_by('-date'),
+        'today_office_leave': OfficePaidLeave.objects.filter(date=today).first(),
+        'missing_punch_out_attendances': Attendance.objects.filter(in_time__isnull=False, out_time__isnull=True).select_related('employee', 'employee__user', 'employee__department').order_by('-date')[:25],
         'hr_notifications': HRNotification.objects.filter(is_read=False)[:10],
         'employee_messages': HRNotification.objects.filter(recipient_role='HR').order_by('-created_at')[:30],
     }
@@ -748,29 +761,40 @@ def hr_dashboard(request, profile):
         description = request.POST.get('description', '').strip()
         try:
             target_date = datetime.strptime(leave_date_str, '%Y-%m-%d').date()
-            opl, created = OfficePaidLeave.objects.get_or_create(
-                date=target_date,
-                defaults={'title': title, 'description': description, 'marked_by': request.user}
-            )
-            if not created:
-                opl.title = title
-                opl.description = description
-                opl.marked_by = request.user
-                opl.save()
-
-            for emp in Employee.objects.filter(is_active_employee=True):
-                att, _ = Attendance.objects.get_or_create(employee=emp, date=target_date)
-                att.status = 'On Leave'
-                att.is_approved_leave = True
-                att.leave_type = 'Paid Leave for the Office'
-                att.leave_reason = title
-                att.updated_by = request.user
-                att.update_source = 'Office Paid Leave'
-                att.save()
-
-            messages.success(request, f"Successfully marked {target_date} as '{title}' (Paid Leave for the Office). Synchronized with employee calendars, attendance, and payroll.")
+            from apps.attendance.services import mark_office_holiday_calendar
+            mark_office_holiday_calendar(target_date, title=title, description=description, marked_by=request.user)
+            messages.success(request, f"Successfully marked {target_date} as '{title}' (Approved Office Paid Holiday). Synchronized with employee calendars, attendance, and payroll.")
         except Exception as e:
             messages.error(request, f"Failed to mark Office Paid Leave: {e}")
+        return redirect('dashboard:index')
+
+    # 3b-2. Handle Manual Punch-Out Correction (HR)
+    if request.method == 'POST' and request.POST.get('action') == 'correct_punch_out':
+        emp_id = request.POST.get('employee_id')
+        date_str = request.POST.get('date')
+        out_time_str = request.POST.get('out_time')
+        reason = request.POST.get('reason', '').strip()
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            time_parts = [int(p) for p in out_time_str.split(':')]
+            from datetime import time as dt_time
+            verified_time = dt_time(time_parts[0], time_parts[1])
+            target_emp = get_object_or_404(Employee, id=emp_id)
+            from apps.attendance.services import correct_missing_punch_out
+            success, msg = correct_missing_punch_out(
+                employee=target_emp,
+                att_date=target_date,
+                verified_out_time=verified_time,
+                reason=reason,
+                hr_user=request.user,
+                ip_address=request.META.get('REMOTE_ADDR', '')
+            )
+            if success:
+                messages.success(request, msg)
+            else:
+                messages.error(request, msg)
+        except Exception as e:
+            messages.error(request, f"Failed to correct punch-out: {e}")
         return redirect('dashboard:index')
 
     if request.method == 'POST' and request.POST.get('action') == 'delete_office_paid_leave':
@@ -919,6 +943,8 @@ def hr_dashboard(request, profile):
         'manual_form': manual_form,
         'biometric_devices': biometric_devices,
         'device_form': device_form,
+        'today_office_leave': OfficePaidLeave.objects.filter(date=today).first(),
+        'missing_punch_out_attendances': Attendance.objects.filter(in_time__isnull=False, out_time__isnull=True).select_related('employee', 'employee__user', 'employee__department').order_by('-date')[:25],
         'hr_notifications': HRNotification.objects.filter(is_read=False)[:10],
         'employee_messages': employee_messages,
     }
@@ -979,6 +1005,7 @@ def employee_dashboard(request, profile):
     context = {
         'profile': profile,
         'today': today,
+        'today_office_leave': OfficePaidLeave.objects.filter(date=today).first(),
         'active_banner': active_banner,
         'active_popup': active_popup,
         'attendance': attendance,

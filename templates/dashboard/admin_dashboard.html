@@ -43,6 +43,19 @@
   </div>
 </div>
 
+{% if today_office_leave %}
+<!-- Green Status Banner: Official Office Paid Holiday -->
+<div class="alert alert-success" style="margin-bottom: 20px; background: #ecfdf5; border: 2px solid #059669; border-radius: 8px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(5,150,105,0.12); color: #065f46;">
+  <span style="font-size: 26px;">🏛️</span>
+  <div>
+    <div style="font-weight: 700; color: #065f46; font-size: 15px;">Official Office Holiday: {{ today_office_leave.title }} (Approved Paid Leave)</div>
+    <div style="color: #047857; font-size: 13px; margin-top: 2px;">
+      Today is an official office holiday / approved non-working day. All staff receive full-day paid salary credit (Green Status) without being marked as Leave Without Pay (LWP).
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if attendance.is_missing_punch_out %}
 <!-- Prominent Red Alert Banner: Missing Punch-Out -->
 <div class="alert alert-danger" style="margin-bottom: 20px; border-left: 5px solid #ef4444; background: #fef2f2; color: #991b1b; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 8px; box-shadow: 0 2px 6px rgba(239,68,68,0.15);">
@@ -203,6 +216,9 @@
         <button type="button" onclick="openAdminOfficialDutyModal()" class="btn btn-primary btn-sm" style="background: #2563eb; border-color: #1d4ed8;">
           🏢 Mark Official Duty (Present)
         </button>
+        <button type="button" onclick="openHrPunchOutCorrectionModal()" class="btn btn-primary btn-sm" style="background: #dc2626; border-color: #b91c1c;">
+          ✏️ Manual Punch-Out Correction
+        </button>
         <button type="button" onclick="openLeaveGrantModal('{{ calendar_employee.id }}')" class="btn btn-outline btn-sm">
           📅 Assign Leave / Permission
         </button>
@@ -267,6 +283,56 @@
     </div>
   </div>
 </div>
+
+{% if missing_punch_out_attendances %}
+<!-- Missing Punch-Outs Card: Pending HR / Admin Regularization -->
+<div class="panel" style="margin-bottom: 24px; border: 1px solid #fecaca; background: #fff5f5;">
+  <div class="panel-header" style="border-bottom: 1px solid #fee2e2; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h3 style="color: #991b1b; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px;">
+        <span>⚠️</span> Missing Punch-Outs Requiring Regularization ({{ missing_punch_out_attendances|length }})
+      </h3>
+      <p style="font-size: 12.5px; color: #b91c1c; margin: 4px 0 0 0;">
+        Employees who punched in but missed punch-out. Working hours and salary are not finalized until authorized HR or Administrator verifies and enters the punch-out time.
+      </p>
+    </div>
+    <button type="button" onclick="openHrPunchOutCorrectionModal()" class="btn btn-danger btn-sm" style="background: #dc2626; border-color: #b91c1c;">
+      ✏️ Enter Punch-Out Correction
+    </button>
+  </div>
+  <div style="max-height: 250px; overflow-y: auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Attendance Date</th>
+          <th>Punch-In Time</th>
+          <th>Punch-Out Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for att in missing_punch_out_attendances %}
+        <tr>
+          <td>
+            <b>{{ att.employee.employee_code }}</b> - {{ att.employee.display_name }}
+            <br><small style="color: #64748b;">{{ att.employee.department.name|default:"General" }}</small>
+          </td>
+          <td><b>{{ att.date|date:"M d, Y" }}</b></td>
+          <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">{{ att.in_time|time:"H:i" }}</span></td>
+          <td><span class="badge" style="background: #fee2e2; color: #b91c1c;">Missing Punch-Out</span></td>
+          <td>
+            <button type="button" onclick="openHrPunchOutCorrectionModal('{{ att.employee.id }}', '{{ att.date|date:'Y-m-d' }}')" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #f87171;">
+              ✏️ Enter Punch-Out
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 <!-- Attendance Machine / Biometric Integration Card -->
 <div class="panel">
@@ -1314,6 +1380,17 @@
   let adminPunchSubmitting = false;
   function executeAdminPunch(action) {
     if (adminPunchSubmitting) return;
+
+    if (!adminLat || !adminLon) {
+      alert("⚠️ Mandatory Attendance Error: Valid GPS location access is mandatory for punch actions. Please enable GPS / location permissions on your browser or device.");
+      return;
+    }
+
+    if (!adminCameraStream || !adminVideo || adminVideo.videoWidth === 0) {
+      alert("⚠️ Mandatory Attendance Error: A live selfie capture is mandatory for punch actions. Please enable your camera permissions.");
+      return;
+    }
+
     adminPunchSubmitting = true;
 
     const form = document.getElementById('adminPunchForm');
@@ -1322,20 +1399,16 @@
     const lonInput = document.getElementById('adminLonInput');
     const locInput = document.getElementById('adminLocInput');
 
-    if (adminLat && adminLon) {
-      latInput.value = adminLat;
-      lonInput.value = adminLon;
-      locInput.value = `GPS: ${adminLat}, ${adminLon}`;
-    }
+    latInput.value = adminLat;
+    lonInput.value = adminLon;
+    locInput.value = `GPS: ${adminLat}, ${adminLon}`;
 
-    if (adminCameraStream && adminVideo && adminVideo.videoWidth > 0) {
-      const canvas = document.getElementById('adminCameraCanvas');
-      canvas.width = adminVideo.videoWidth;
-      canvas.height = adminVideo.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(adminVideo, 0, 0, canvas.width, canvas.height);
-      photoInput.value = canvas.toDataURL('image/jpeg', 0.85);
-    }
+    const canvas = document.getElementById('adminCameraCanvas');
+    canvas.width = adminVideo.videoWidth;
+    canvas.height = adminVideo.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(adminVideo, 0, 0, canvas.width, canvas.height);
+    photoInput.value = canvas.toDataURL('image/jpeg', 0.85);
 
     let inputAction = document.createElement('input');
     inputAction.type = 'hidden';
@@ -1351,6 +1424,25 @@
 
   function closeAdminOfficialDutyModal() {
     document.getElementById('adminOfficialDutyModal').classList.remove('active');
+  }
+
+  function openHrPunchOutCorrectionModal(empId, attDate) {
+    const modal = document.getElementById('adminPunchOutCorrectionModal');
+    if (!modal) return;
+    if (empId) {
+      const empSelect = document.getElementById('adminCorrectionEmployeeSelect');
+      if (empSelect) empSelect.value = empId;
+    }
+    if (attDate) {
+      const dateInput = document.getElementById('adminCorrectionDateInput');
+      if (dateInput) dateInput.value = attDate;
+    }
+    modal.classList.add('active');
+  }
+
+  function closeHrPunchOutCorrectionModal() {
+    const modal = document.getElementById('adminPunchOutCorrectionModal');
+    if (modal) modal.classList.remove('active');
   }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -1475,6 +1567,54 @@
       <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
         <button type="button" class="btn btn-outline" onclick="closeAdminOfficialDutyModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" style="background: #2563eb;">Confirm Official Duty (Mark Present)</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Admin Manual Punch-Out Correction Modal -->
+<div class="modal-overlay" id="adminPunchOutCorrectionModal">
+  <div class="modal-card" style="max-width: 540px;">
+    <div class="modal-header">
+      <h3 style="font-size: 16px; margin: 0;">✏️ Manual Punch-Out Correction</h3>
+      <button type="button" class="modal-close" onclick="closeHrPunchOutCorrectionModal()">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'attendance:correct_punch_out' %}">
+      {% csrf_token %}
+      <div class="modal-body" style="padding: 20px;">
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #991b1b; line-height: 1.45;">
+          ℹ️ <b>Audit Trail Policy:</b> Authorized HR or Administrator enters the verified punch-out time for employees who punched in but missed punch-out. The correction is logged with your Administrator user ID, timestamp, and verification reason without requiring the employee to re-submit GPS/selfie for historical records.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Target Employee</label>
+          <select name="employee_id" id="adminCorrectionEmployeeSelect" class="form-select" required>
+            <option value="" disabled selected>-- Select Employee --</option>
+            {% for emp in all_active_employees %}
+            <option value="{{ emp.id }}">{{ emp.employee_code }} - {{ emp.display_name }} ({{ emp.department.name|default:"General" }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Attendance Date</label>
+          <input type="date" name="date" id="adminCorrectionDateInput" value="{{ today|date:'Y-m-d' }}" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Verified Punch-Out Time (24-hour)</label>
+          <input type="time" name="out_time" id="adminCorrectionTimeInput" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Reason for Correction / Regularization</label>
+          <textarea name="reason" class="form-input" rows="3" placeholder="Provide reason (e.g. Employee forgot punch-out; verified via CCTV or supervisor confirmation)..." required></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-outline" onclick="closeHrPunchOutCorrectionModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="background: #dc2626; border-color: #b91c1c;">Save Verified Punch-Out</button>
       </div>
     </form>
   </div>
