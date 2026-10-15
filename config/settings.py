@@ -30,20 +30,40 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ['*']
 
-# CSRF Trusted Origins for remote, LAN, and Railway cloud access
+# Reverse Proxy and SSL Header configuration for Railway cloud deployment
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# CSRF Trusted Origins for local, remote, and Railway cloud domains
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://0.0.0.0:8000',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+    'http://*.railway.app',
+    'http://*.up.railway.app',
+    'https://employee-management-production-d7b2.up.railway.app',
+    'http://employee-management-production-d7b2.up.railway.app',
+]
+
+# Dynamically include Railway public domain if provided by Railway environment
+railway_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN') or os.getenv('RAILWAY_STATIC_URL')
+if railway_domain:
+    clean_domain = railway_domain.replace('https://', '').replace('http://', '').strip('/')
+    for proto in ('https://', 'http://'):
+        origin = f"{proto}{clean_domain}"
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+
+# Include any custom origins from environment variable
 csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if csrf_origins:
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
-else:
-    CSRF_TRUSTED_ORIGINS = [
-        'http://127.0.0.1:8000',
-        'http://localhost:8000',
-        'http://0.0.0.0:8000',
-        'https://*.railway.app',
-        'https://*.up.railway.app',
-        'http://*.railway.app',
-        'http://*.up.railway.app',
-    ]
+    for origin in csrf_origins.split(','):
+        cleaned = origin.strip()
+        if cleaned and cleaned not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(cleaned)
 
 # Application definition
 INSTALLED_APPS = [
