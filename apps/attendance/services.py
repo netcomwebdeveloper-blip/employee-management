@@ -118,31 +118,26 @@ def reset_daily_missed_punch_in_status(target_date=None):
     Evaluates and resets daily punch-in status for all active employees, HR staff, and administrators.
     - Calculates attendance based on the system's local calendar day (12:00 AM to 11:59 PM).
     - Daily punch-in is mandatory for all employees, HR, and admins.
-    - Reset the daily attendance processing status at 12:00 AM midnight for the new local calendar day.
-    - Reset the missed punch-in status daily at 12:00 PM according to system local time.
-    - Before 12:00 PM local time: status is 'Pending Punch-In' for unpunched staff.
-    - Daily at 12:00 PM local time: any staff without in_time who is not on approved leave, official duty,
-      or office holiday has their status marked as 'Missed Punch-In' (prominently in red).
-    - If someone has punched in but missing punch out: status is 'Missing Punch-Out' (prominently in red).
-    - Historical attendance records (date < today) are strictly preserved without alteration or deletion.
-    - Any unpunched records from past days (date < today) are marked as Missed Punch-In / Leave Without Pay (LWP).
+    - Auto-evaluation occurs at 12:00 AM midnight for the new local calendar day:
+      Any past unpunched records (date < today) are evaluated and marked as 'Missed Punch-In' / 'Midnight Daily Auto-Reset'.
+    - For the current working day (today), unpunched staff remain 'Pending Punch-In' throughout the active calendar day.
+    - Historical attendance records (date < today) with recorded punches are strictly preserved without alteration or deletion.
     """
-    from datetime import time
     from apps.employees.models import Employee
     from apps.leave_management.models import OfficePaidLeave
 
     now = timezone.localtime()
     today = target_date if target_date else now.date()
-    cutoff_time = time(12, 0)
-    is_past_12pm = (now.time() >= cutoff_time)
 
-    # 1. Midnight reset / historical cleanup: finalize any past 'Pending Punch-In' records
-    past_pendings = Attendance.objects.filter(date__lt=today, status='Pending Punch-In')
+    # 1. Midnight 12:00 AM reset / historical auto-evaluation:
+    # Finalize any past 'Pending Punch-In' or unpunched past records (date < today)
+    past_pendings = Attendance.objects.filter(date__lt=today, status__in=['Pending Punch-In', 'Pending', 'Absent'])
     for p_att in past_pendings:
         if not p_att.in_time:
-            p_att.status = 'Missed Punch-In'
-            p_att.update_source = 'Midnight Daily Auto-Reset'
-            p_att.save(update_fields=['status', 'update_source'])
+            if p_att.status != 'Missed Punch-In' or p_att.update_source != 'Midnight Daily Auto-Reset':
+                p_att.status = 'Missed Punch-In'
+                p_att.update_source = 'Midnight Daily Auto-Reset'
+                p_att.save(update_fields=['status', 'update_source'])
 
     # 2. All active employees across all roles: EMPLOYEE, HR, ADMIN
     active_employees = Employee.objects.filter(is_active_employee=True).select_related('user')
@@ -192,26 +187,23 @@ def reset_daily_missed_punch_in_status(target_date=None):
                         att.save(update_fields=['status'])
                         updated_count += 1
             else:
-                # No punch in recorded for today
-                if is_past_12pm:
-                    if att.status != 'Missed Punch-In':
-                        att.status = 'Missed Punch-In'
-                        att.update_source = 'Daily 12:00 PM Auto-Evaluation'
-                        att.save(update_fields=['status', 'update_source'])
-                        updated_count += 1
-                else:
-                    if att.status not in ('Pending Punch-In', 'Absent'):
-                        att.status = 'Pending Punch-In'
-                        att.save(update_fields=['status'])
-                        updated_count += 1
+                # No punch in recorded for today yet -> remains Pending Punch-In during the active calendar day
+                if att.status in ('Missed Punch-In', 'Daily 12:00 PM Auto-Evaluation') or '12:00 PM' in (att.update_source or ''):
+                    att.status = 'Pending Punch-In'
+                    att.update_source = 'Mandatory Daily Punch'
+                    att.save(update_fields=['status', 'update_source'])
+                    updated_count += 1
+                elif att.status not in ('Pending Punch-In', 'Absent'):
+                    att.status = 'Pending Punch-In'
+                    att.save(update_fields=['status'])
+                    updated_count += 1
         else:
-            # No record for today yet
-            target_status = 'Missed Punch-In' if is_past_12pm else 'Pending Punch-In'
+            # No record for today yet -> Initialize with Pending Punch-In
             Attendance.objects.create(
                 employee=emp,
                 date=today,
-                status=target_status,
-                update_source='Daily 12:00 PM Auto-Evaluation' if is_past_12pm else 'Mandatory Daily Punch'
+                status='Pending Punch-In',
+                update_source='Mandatory Daily Punch'
             )
             updated_count += 1
 

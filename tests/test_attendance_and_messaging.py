@@ -74,7 +74,7 @@ class AttendanceAndMessagingTests(TestCase):
             tax_deduction=Decimal('200.00')
         )
 
-    def test_mandatory_punch_in_and_12pm_reset(self):
+    def test_mandatory_punch_in_and_midnight_reset(self):
         today = timezone.localdate()
         past_date = today - timedelta(days=2)
 
@@ -87,26 +87,24 @@ class AttendanceAndMessagingTests(TestCase):
             out_time=time(18, 30)
         )
 
-        # Before 12:00 PM, reset does not flag today's attendance as Missed Punch-In
-        with patch('apps.attendance.services.timezone.localtime') as mock_time:
-            # Mock 10:00 AM local time
-            mock_time.return_value = datetime(today.year, today.month, today.day, 10, 0, 0)
-            reset_daily_missed_punch_in_status(target_date=today)
+        # Unpunched yesterday record
+        yesterday = today - timedelta(days=1)
+        yesterday_att = Attendance.objects.create(
+            employee=self.emp_profile,
+            date=yesterday,
+            status='Pending Punch-In'
+        )
 
-            today_att = Attendance.objects.filter(employee=self.emp_profile, date=today).first()
-            if today_att:
-                self.assertNotEqual(today_att.status, 'Missed Punch-In')
+        # For today: unpunched employee remains Pending Punch-In during the active calendar day
+        reset_daily_missed_punch_in_status(target_date=today)
+        today_att = Attendance.objects.get(employee=self.emp_profile, date=today)
+        self.assertEqual(today_att.status, 'Pending Punch-In')
+        self.assertNotEqual(today_att.status, 'Missed Punch-In')
 
-        # After 12:00 PM, unpunched employee is flagged as Missed Punch-In
-        with patch('apps.attendance.services.timezone.localtime') as mock_time:
-            # Mock 12:01 PM local time
-            mock_time.return_value = datetime(today.year, today.month, today.day, 12, 1, 0)
-            count = reset_daily_missed_punch_in_status(target_date=today)
-            self.assertGreaterEqual(count, 1)
-
-            today_att = Attendance.objects.get(employee=self.emp_profile, date=today)
-            self.assertEqual(today_att.status, 'Missed Punch-In')
-            self.assertTrue(today_att.is_missed_punch_in)
+        # Midnight auto-evaluation: past unpunched day evaluated at 12:00 AM midnight
+        yesterday_att.refresh_from_db()
+        self.assertEqual(yesterday_att.status, 'Missed Punch-In')
+        self.assertEqual(yesterday_att.update_source, 'Midnight Daily Auto-Reset')
 
         # Verify historical records were NOT altered or deleted
         past_att_refreshed = Attendance.objects.get(id=past_att.id)
