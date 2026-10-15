@@ -67,17 +67,6 @@
     </div>
   </div>
 </div>
-{% elif attendance.is_missed_punch_in %}
-<!-- Prominent Red Alert Banner: Missed Punch-In -->
-<div class="alert alert-danger" style="margin-bottom: 20px; border-left: 5px solid #ef4444; background: #fef2f2; color: #991b1b; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 8px; box-shadow: 0 2px 6px rgba(239,68,68,0.15);">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 26px;">⚠️</span>
-    <div>
-      <div style="font-weight: 700; font-size: 15px; color: #b91c1c;">Daily Punch-In Missed (Mandatory Attendance Cutoff Exceeded)</div>
-      <div style="font-size: 13px; margin-top: 2px;">Daily punch-in is mandatory for all personnel. Attendance status is flagged prominently in red as <b>Missed Punch-In</b> following the 12:00 PM daily cutoff.</div>
-    </div>
-  </div>
-</div>
 {% endif %}
 
 <!-- Customizable Dashboard Banner Hero -->
