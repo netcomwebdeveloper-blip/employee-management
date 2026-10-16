@@ -9,7 +9,11 @@ def admin_required(view_func):
             return redirect('login')
         if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
-        profile = getattr(request.user, 'employee', None)
+        try:
+            from apps.dashboard.views import get_or_create_employee_profile
+            profile = get_or_create_employee_profile(request.user)
+        except Exception:
+            profile = getattr(request.user, 'employee', None)
         if profile and profile.role == 'ADMIN':
             return view_func(request, *args, **kwargs)
         messages.error(request, 'Access denied. Administrator privileges required.')
@@ -23,7 +27,11 @@ def hr_or_admin_required(view_func):
             return redirect('login')
         if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
-        profile = getattr(request.user, 'employee', None)
+        try:
+            from apps.dashboard.views import get_or_create_employee_profile
+            profile = get_or_create_employee_profile(request.user)
+        except Exception:
+            profile = getattr(request.user, 'employee', None)
         if profile and profile.role in ('ADMIN', 'HR'):
             return view_func(request, *args, **kwargs)
         messages.error(request, 'Access denied. HR or Admin privileges required.')

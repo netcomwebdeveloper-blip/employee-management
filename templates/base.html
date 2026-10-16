@@ -21,7 +21,7 @@
 
       <nav class="sidebar-menu">
         <div class="nav-label">Core Navigation</div>
-        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'hr_dashboard' %}active{% endif %}">
+        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'hr_dashboard' or request.resolver_match.url_name == 'hr_dashboard' and current_profile.role == 'HR' %}active{% endif %}">
           <span class="nav-icon">📊</span>
           <span>Dashboard</span>
         </a>

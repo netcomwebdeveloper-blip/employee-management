@@ -6,9 +6,10 @@ def company_context(request):
     profile = None
     if request.user.is_authenticated:
         try:
-            profile = getattr(request.user, 'employee', None)
+            from apps.dashboard.views import get_or_create_employee_profile
+            profile = get_or_create_employee_profile(request.user)
         except Exception:
-            profile = None
+            profile = getattr(request.user, 'employee', None)
 
     active_banner = DashboardBanner.get_active_banner()
     active_popup = DashboardPopup.get_active_popup()

@@ -23,13 +23,18 @@ class Command(BaseCommand):
 
         # 2. Explicitly ensure default login accounts and passwords
         creds = [
-            ('NETCOM', 'Netcom@2026@Netcom', True, True, 'NETCOM', 'Administrator', 'admin@netcom.com'),
-            ('hr', 'hr12345', False, False, 'HR', 'Manager', 'hr@netcom.com'),
-            ('emp', 'emp12345', False, False, 'Regular', 'Employee', 'emp@netcom.com'),
-            ('08092003', 'emp12345', False, False, 'Mathan', 'M', 'mathan003m@gmail.com'),
+            ('NETCOM', 'Netcom@2026@Netcom', True, True, 'NETCOM', 'Administrator', 'admin@netcom.com', 'ADMIN'),
+            ('hr', 'hr12345', False, False, 'HR', 'Manager', 'hr@netcom.com', 'HR'),
+            ('emp', 'emp12345', False, False, 'Regular', 'Employee', 'emp@netcom.com', 'EMPLOYEE'),
+            ('08092003', 'emp12345', False, False, 'Mathan', 'M', 'mathan003m@gmail.com', 'EMPLOYEE'),
+            ('emp1', 'emp12345', False, False, 'Goutham', 'HR', 'goutham@netcom.com', 'HR'),
+            ('emp2', 'emp12345', False, False, 'Goutham', 'Employee', 'goutham.emp@netcom.com', 'EMPLOYEE'),
         ]
 
-        for username, password, is_super, is_staff, first, last, email in creds:
+        from apps.departments.models import Department
+        default_dept = Department.objects.first()
+
+        for username, password, is_super, is_staff, first, last, email, role in creds:
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
@@ -45,4 +50,27 @@ class Command(BaseCommand):
             user.is_staff = is_staff
             user.is_active = True
             user.save()
-            self.stdout.write(self.style.SUCCESS(f"User '{username}' verified and password configured."))
+
+            emp = getattr(user, 'employee', None)
+            if not emp:
+                code_prefix = 'ADM' if role == 'ADMIN' else ('HR' if role == 'HR' else 'EMP')
+                emp_code = f"{code_prefix}{user.id:04d}"
+                idx = 1
+                while Employee.objects.filter(employee_code=emp_code).exists():
+                    emp_code = f"{code_prefix}{user.id:04d}_{idx}"
+                    idx += 1
+                emp = Employee.objects.create(
+                    user=user,
+                    employee_code=emp_code,
+                    role=role,
+                    department=default_dept,
+                    raw_password=password,
+                    casual_leave_balance=1,
+                    is_active_employee=True,
+                )
+            else:
+                emp.role = role
+                emp.raw_password = password
+                emp.save(update_fields=['role', 'raw_password'])
+
+            self.stdout.write(self.style.SUCCESS(f"User '{username}' verified (Role: {role}) and password configured."))
