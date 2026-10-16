@@ -6,6 +6,7 @@ class LeaveRequest(models.Model):
     LEAVE_TYPES = (
         ('Casual Leave', 'Casual Leave'),
         ('Sick Leave', 'Sick Leave'),
+        ('Permission (Up to 2 Hours)', 'Permission (Up to 2 Hours)'),
     )
 
     STATUS_CHOICES = (

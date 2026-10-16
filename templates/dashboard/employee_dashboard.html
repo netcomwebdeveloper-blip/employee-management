@@ -102,21 +102,6 @@
 {% endif %}
 
 
-{% if has_missing_punch_out or attendance.is_missing_punch_out %}
-<div class="alert alert-danger" style="margin-bottom: 20px; background: #fef2f2; border: 2px solid #ef4444; border-radius: 8px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 4px 12px rgba(239,68,68,0.12);">
-  <div style="display: flex; align-items: center; gap: 12px;">
-    <span style="font-size: 26px;">⚠️</span>
-    <div>
-      <div style="font-weight: 700; color: #991b1b; font-size: 15px;">Incomplete Attendance Detected — Missing Punch-Out</div>
-      <div style="color: #b91c1c; font-size: 13px; margin-top: 2px;">
-        Your punch-in was recorded at <b>{{ attendance.in_time|time:"h:i A" }}</b>, but punch-out is marked as <b>Missing</b>. That day's working hours and salary cannot be calculated or finalized based on incomplete attendance data.
-        <strong>Please contact HR to enter or correct your missing punch-out time manually.</strong>
-      </div>
-    </div>
-  </div>
-  <a href="#sendMessageSection" class="btn btn-danger btn-sm" style="white-space: nowrap; background: #ef4444; color: #fff;">Contact HR to Correct</a>
-</div>
-{% endif %}
 
 {% if active_work_plan_notification %}
 <div class="alert alert-info" style="margin-bottom: 20px; border-left: 5px solid #2563eb; background: #eff6ff; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(37,99,235,0.1);">
@@ -171,11 +156,6 @@
         </p>
         {% endif %}
 
-        {% if attendance.is_missing_punch_out or has_missing_punch_out %}
-        <div style="margin-bottom: 10px; padding: 8px 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 6px; font-size: 12px; color: #fecaca; line-height: 1.4;">
-          ⚠️ <b>Punch-Out Missing:</b> Working hours & salary cannot be finalized. Please contact HR to enter or correct your missing punch-out time manually.
-        </div>
-        {% endif %}
 
         <!-- Punch Actions -->
         <form method="POST" action="{% url 'attendance:punch' %}" id="punchForm" style="display: flex; gap: 10px;">
@@ -375,16 +355,18 @@
   <!-- Apply for Leave Modal/Form -->
   <div class="panel">
     <div class="panel-header">
-      <h3>Apply for Leave</h3>
+      <h3 id="leavePanelHeading">Apply for Leave</h3>
     </div>
     <div class="panel-body">
-      <form method="POST" action="{% url 'leave_management:list' %}">
+      <form method="POST" action="{% url 'leave_management:list' %}" id="employeeLeaveForm">
         {% csrf_token %}
         <div class="form-group">
           <label class="form-label">Leave Category</label>
           {{ leave_form.leave_type }}
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+
+        <!-- Standard Date Range Fields (for Casual/Sick leave) -->
+        <div id="standardDateRangeGroup" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
             <label class="form-label">From Date</label>
             {{ leave_form.from_date }}
@@ -394,11 +376,37 @@
             {{ leave_form.to_date }}
           </div>
         </div>
+
+        <!-- Permission-specific Fields (Dynamic when "Permission (Up to 2 Hours)" selected) -->
+        <div id="permissionFieldsGroup" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Permission Date</label>
+            <input type="date" name="permission_date" id="permDateInput" class="form-input" value="{{ today|date:'Y-m-d' }}" onchange="calculatePermissionDuration()">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">From Time</label>
+              <input type="time" name="from_time" id="permFromTime" class="form-input" value="10:00" onchange="calculatePermissionDuration()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Time</label>
+              <input type="time" name="to_time" id="permToTime" class="form-input" value="11:30" onchange="calculatePermissionDuration()">
+            </div>
+          </div>
+          <div style="margin-bottom: 14px; padding: 10px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px;">
+            <span style="color: #1e40af; font-weight: 600;">⏱️ Calculated Duration:</span>
+            <span id="permDurationDisplay" style="font-weight: 700; color: #2563eb; margin-left: 6px;">1 hr 30 mins</span>
+            <div id="permDurationNotice" style="color: #64748b; font-size: 11.5px; margin-top: 3px;">
+              Maximum allowed permission duration is 2 hours (120 minutes) per day without salary deduction upon HR approval.
+            </div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label class="form-label">Reason</label>
           {{ leave_form.reason }}
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Leave Application</button>
+        <button type="submit" id="submitLeaveBtn" class="btn btn-primary" style="width: 100%;">Submit Leave Application</button>
       </form>
     </div>
   </div>
@@ -760,9 +768,80 @@
     document.getElementById('empWorkImageModal').classList.add('active');
   }
 
-  function closeEmpImageModal() {
-    document.getElementById('empWorkImageModal').classList.remove('active');
+  function onLeaveCategoryChange() {
+    const categorySelect = document.getElementById('id_leave_type');
+    const dateRangeGroup = document.getElementById('standardDateRangeGroup');
+    const permissionGroup = document.getElementById('permissionFieldsGroup');
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    const panelHeading = document.getElementById('leavePanelHeading');
+    const fromDate = document.getElementById('id_from_date');
+    const toDate = document.getElementById('id_to_date');
+
+    if (!categorySelect) return;
+    const val = categorySelect.value;
+    if (val.includes('Permission')) {
+      if (dateRangeGroup) dateRangeGroup.style.display = 'none';
+      if (permissionGroup) permissionGroup.style.display = 'block';
+      if (fromDate) fromDate.required = false;
+      if (toDate) toDate.required = false;
+      if (panelHeading) panelHeading.textContent = 'Request Permission (Up to 2 Hours)';
+      if (submitBtn) submitBtn.textContent = 'Submit Permission Request';
+      calculatePermissionDuration();
+    } else {
+      if (dateRangeGroup) dateRangeGroup.style.display = 'grid';
+      if (permissionGroup) permissionGroup.style.display = 'none';
+      if (fromDate) fromDate.required = true;
+      if (toDate) toDate.required = true;
+      if (panelHeading) panelHeading.textContent = 'Apply for Leave';
+      if (submitBtn) {
+        submitBtn.textContent = 'Submit Leave Application';
+        submitBtn.disabled = false;
+      }
+    }
   }
+
+  function calculatePermissionDuration() {
+    const fromTime = document.getElementById('permFromTime').value;
+    const toTime = document.getElementById('permToTime').value;
+    const display = document.getElementById('permDurationDisplay');
+    const notice = document.getElementById('permDurationNotice');
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    const permDate = document.getElementById('permDateInput').value;
+    const fromDate = document.getElementById('id_from_date');
+    const toDate = document.getElementById('id_to_date');
+
+    if (fromDate && permDate) fromDate.value = permDate;
+    if (toDate && permDate) toDate.value = permDate;
+
+    if (!fromTime || !toTime) return;
+
+    const [fh, fm] = fromTime.split(':').map(Number);
+    const [th, tm] = toTime.split(':').map(Number);
+    const diffMins = (th * 60 + tm) - (fh * 60 + fm);
+
+    if (diffMins <= 0) {
+      display.innerHTML = '<span style="color:#ef4444; font-weight: 700;">Invalid Range (To time must be after From time)</span>';
+      if (notice) notice.innerHTML = '<span style="color:#ef4444;">Please select an end time later than start time.</span>';
+      if (submitBtn) submitBtn.disabled = true;
+    } else if (diffMins > 120) {
+      const hrs = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      display.innerHTML = `<span style="color:#ef4444; font-weight: 700;">${hrs}h ${mins}m (Exceeds 2-hour limit)</span>`;
+      if (notice) notice.innerHTML = '<span style="color:#ef4444; font-weight:600;">Maximum allowed duration is 2 hours (120 minutes). Please adjust the times.</span>';
+      if (submitBtn) submitBtn.disabled = true;
+    } else {
+      const hrs = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      const durLabel = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs} hr(s)`) : `${mins} mins`;
+      display.innerHTML = `<span style="color:#10b981; font-weight:700;">${durLabel} (Valid)</span>`;
+      if (notice) notice.innerHTML = '<span style="color:#059669;">Valid duration within 2-hour policy. Zero salary deduction on HR approval.</span>';
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    onLeaveCategoryChange();
+  });
 </script>
 
 <!-- Employee Work Image Lightbox Modal -->

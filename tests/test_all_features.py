@@ -402,9 +402,9 @@ class ComprehensiveSystemTests(TestCase):
         self.assertEqual(leave.approval_type, 'Paid Casual Leave')
         self.assertEqual(self.emp_profile.casual_leave_balance, bal_before - 1)
 
-        # 3. Verify Leave categories are strictly Casual Leave and Sick Leave only
+        # 3. Verify Leave categories include Casual Leave, Sick Leave, and Permission (Up to 2 Hours)
         leave_types = [t[0] for t in LeaveRequest.LEAVE_TYPES]
-        self.assertEqual(leave_types, ['Casual Leave', 'Sick Leave'])
+        self.assertEqual(leave_types, ['Casual Leave', 'Sick Leave', 'Permission (Up to 2 Hours)'])
         self.assertNotIn('Annual Leave', leave_types)
         self.assertNotIn('Unpaid Leave', leave_types)
 

@@ -1399,7 +1399,13 @@
     document.getElementById('revBalance').textContent = balance;
     document.getElementById('revReason').textContent = reason;
     document.getElementById('revStatusSelect').value = 'Approved';
-    document.getElementById('revClassificationSelect').value = (leaveType === 'Sick Leave') ? 'Paid Sick Leave' : 'Paid Casual Leave';
+    if (leaveType.indexOf('Permission') !== -1) {
+      document.getElementById('revClassificationSelect').value = 'Approved Permission';
+    } else if (leaveType === 'Sick Leave') {
+      document.getElementById('revClassificationSelect').value = 'Paid Sick Leave';
+    } else {
+      document.getElementById('revClassificationSelect').value = 'Paid Casual Leave';
+    }
     onReviewStatusChange();
     document.getElementById('leaveReviewModal').classList.add('active');
   }
@@ -1413,10 +1419,15 @@
     const classGroup = document.getElementById('classificationGroup');
     const rejGroup = document.getElementById('rejectionGroup');
     const submitBtn = document.getElementById('revSubmitBtn');
+    const leaveType = document.getElementById('revLeaveType').textContent;
     if (status === 'Approved') {
       classGroup.style.display = 'block';
       rejGroup.style.display = 'none';
-      submitBtn.textContent = 'Approve Leave Request';
+      if (leaveType.indexOf('Permission') !== -1) {
+        submitBtn.textContent = 'Approve Permission Request';
+      } else {
+        submitBtn.textContent = 'Approve Leave Request';
+      }
       submitBtn.className = 'btn btn-success';
     } else {
       classGroup.style.display = 'none';
@@ -1483,9 +1494,10 @@
           <select name="classification" id="revClassificationSelect" class="form-select">
             <option value="Paid Casual Leave">Paid Casual Leave (Full Pay, Deducts Balance)</option>
             <option value="Paid Sick Leave">Paid Sick Leave (Full Pay)</option>
+            <option value="Approved Permission">Approved Permission (Up to 2 Hours - No Salary Deduction)</option>
           </select>
           <small style="color: var(--gray-600); display: block; margin-top: 4px;">
-            Classifying as <b>Paid Casual Leave</b> or <b>Paid Sick Leave</b> pays full salary with zero deduction.
+            Classifying as <b>Paid Casual Leave</b>, <b>Paid Sick Leave</b>, or <b>Approved Permission</b> pays full salary with zero deduction.
           </small>
         </div>
 

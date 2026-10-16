@@ -50,6 +50,8 @@ def calculate_payroll_for_employee(emp, year, month):
     unpaid_leave_days = set()
 
     for l in approved_leaves:
+        if l.leave_type in ('Permission', 'Permission (Up to 2 Hours)') or 'Permission' in l.approval_type:
+            continue
         curr = max(l.from_date, month_start)
         end = min(l.to_date, month_end)
         while curr <= end:

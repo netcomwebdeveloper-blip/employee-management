@@ -54,6 +54,16 @@ def user_profile_view(request):
             password_form = PasswordChangeForm(user=request.user, data=request.POST)
             if password_form.is_valid():
                 user = password_form.save()
+                new_pwd = password_form.cleaned_data.get('new_password1')
+                if not profile:
+                    try:
+                        from apps.employees.models import Employee
+                        profile = Employee.objects.get(user=user)
+                    except Exception:
+                        profile = None
+                if profile and new_pwd:
+                    profile.raw_password = new_pwd
+                    profile.save(update_fields=['raw_password'])
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Your password was successfully updated!')
                 return redirect('users:profile')

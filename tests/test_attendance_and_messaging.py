@@ -135,12 +135,11 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertEqual(payroll_data['half_days'], 0)
         self.assertIn('missing punch-out', payroll_data['remarks'])
 
-        # Verify employee dashboard prominently instructs employee to contact HR
+        # Verify employee dashboard has removed the unwanted missing punch-out alert banners per user request
         self.client.login(username='emp_john', password='john12345')
         response = self.client.get('/dashboard/employee/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Punch-Out Missing')
-        self.assertContains(response, 'Please contact HR to enter or correct your missing punch-out time')
+        self.assertNotContains(response, 'Incomplete Attendance Detected — Missing Punch-Out')
         self.client.logout()
 
     def test_official_duty_marking_and_payroll(self):
@@ -376,4 +375,93 @@ class AttendanceAndMessagingTests(TestCase):
         att.refresh_from_db()
         self.assertEqual(att.status, 'On Leave')
         self.assertEqual(att.leave_type, 'Paid Leave for the Office')
+
+    def test_employee_password_update_reflects_in_raw_password(self):
+        self.client.login(username='emp_john', password='john12345')
+        resp = self.client.post('/users/profile/', {
+            'change_password': '1',
+            'old_password': 'john12345',
+            'new_password1': 'newSecret99!',
+            'new_password2': 'newSecret99!'
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        self.emp_profile.refresh_from_db()
+        self.assertEqual(self.emp_profile.raw_password, 'newSecret99!')
+
+        # Verify HR dashboard shows the updated password
+        self.client.logout()
+        self.client.login(username='hr_user', password='hr12345')
+        resp_hr = self.client.get('/dashboard/hr/')
+        self.assertEqual(resp_hr.status_code, 200)
+        self.assertContains(resp_hr, 'newSecret99!')
+
+    def test_permission_request_workflow_validation_and_hr_approval(self):
+        target_date = date(2026, 10, 20)
+        self.client.login(username='emp_john', password='john12345')
+
+        # 1. Valid permission request (90 mins <= 120 mins)
+        resp = self.client.post('/leave/', {
+            'leave_type': 'Permission (Up to 2 Hours)',
+            'permission_date': target_date.strftime('%Y-%m-%d'),
+            'from_time': '10:00',
+            'to_time': '11:30',
+            'reason': 'Medical consultation'
+        }, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        perm = LeaveRequest.objects.filter(employee=self.emp_profile, from_date=target_date, leave_type='Permission (Up to 2 Hours)').first()
+        self.assertIsNotNone(perm)
+        self.assertEqual(perm.status, 'Pending')
+        self.assertIn('Medical consultation', perm.reason)
+        self.assertIn('1h 30m', perm.approval_type)
+
+        # 2. Permission duration exceeding 2 hours (> 120 mins) must be rejected
+        other_date = date(2026, 10, 21)
+        resp_invalid = self.client.post('/leave/', {
+            'leave_type': 'Permission (Up to 2 Hours)',
+            'permission_date': other_date.strftime('%Y-%m-%d'),
+            'from_time': '10:00',
+            'to_time': '12:30',
+            'reason': 'Personal errand'
+        }, follow=True)
+        self.assertEqual(resp_invalid.status_code, 200)
+        self.assertFalse(LeaveRequest.objects.filter(employee=self.emp_profile, from_date=other_date).exists())
+
+        # 3. Duplicate request on the same date must be rejected
+        resp_dup = self.client.post('/leave/', {
+            'leave_type': 'Permission (Up to 2 Hours)',
+            'permission_date': target_date.strftime('%Y-%m-%d'),
+            'from_time': '14:00',
+            'to_time': '15:00',
+            'reason': 'Another appointment'
+        }, follow=True)
+        self.assertEqual(resp_dup.status_code, 200)
+        self.assertEqual(LeaveRequest.objects.filter(employee=self.emp_profile, from_date=target_date).count(), 1)
+        self.client.logout()
+
+        # 4. HR approves permission
+        self.client.login(username='hr_user', password='hr12345')
+        resp_approve = self.client.post(f'/leave/{perm.id}/review/', {
+            'status': 'Approved',
+            'classification': 'Approved Permission'
+        }, follow=True)
+        self.assertEqual(resp_approve.status_code, 200)
+
+        perm.refresh_from_db()
+        self.assertEqual(perm.status, 'Approved')
+
+        att = Attendance.objects.get(employee=self.emp_profile, date=target_date)
+        self.assertTrue(att.is_permission)
+        self.assertEqual(att.permission_hours, Decimal('2.00'))
+
+        # Verify audit log
+        audit = AttendanceAuditLog.objects.filter(attendance=att, action='PERMISSION_APPROVED').first()
+        self.assertIsNotNone(audit)
+        self.assertEqual(audit.changed_by, self.hr_user)
+
+        # Verify payroll calculation: 0 deduction
+        payroll_data = calculate_payroll_for_employee(self.emp_profile, 2026, 10)
+        self.assertEqual(payroll_data['permission_days'], 1)
+        self.assertEqual(payroll_data['absent_days'], 0)
 
