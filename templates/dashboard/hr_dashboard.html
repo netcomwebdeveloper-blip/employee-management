@@ -40,7 +40,7 @@
       <span class="punch-stat-label">Casual Leave Balance</span>
       <span class="punch-stat-value" style="color: var(--primary);">{{ profile.casual_leave_balance }} Days</span>
       <div style="font-size: 11px; color: #0284c7; font-weight: 600; margin-top: 3px; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
-        ⏱️ Perm: <b>{{ permission_balance.remaining_formatted }}</b> / 5h (<b>{{ permission_balance.remaining_requests }}</b> left)
+        ⏱️ Remaining Permission: <b>{{ permission_balance.remaining_formatted }}</b>
       </div>
     </div>
   </div>
@@ -252,35 +252,6 @@
         <button type="button" onclick="openHrLeaveModal('{{ calendar_employee.id }}')" class="btn btn-outline btn-sm">
           📅 Assign Leave / Permission
         </button>
-      </div>
-
-      <!-- Calendar Status Color Legend -->
-      <div class="calendar-legend" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding: 10px 14px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; font-size: 11.5px; align-items: center;">
-        <span style="font-weight: 700; color: var(--gray-700); margin-right: 2px;">Legend:</span>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #16a34a; border-radius: 3px;"></span>
-          <span>Full Day (9h+)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #f59e0b; border-radius: 3px;"></span>
-          <span>Half Day (4.5h–&lt;9h)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #ecfdf5; border: 2.5px solid #f59e0b; border-radius: 3px;"></span>
-          <span>Permission (Up to 2h)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #ef4444; border-radius: 3px;"></span>
-          <span>Missed Punch / Absent</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #10b981; border: 1.5px solid #059669; border-radius: 3px;"></span>
-          <span>Holiday / Sunday (Paid)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 3px;"></span>
-          <span>Prior to Joining</span>
-        </div>
       </div>
     </div>
   </div>

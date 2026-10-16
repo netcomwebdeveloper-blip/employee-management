@@ -144,11 +144,6 @@ def leave_list(request):
                 messages.error(request, "Permission limit: Minimum allowed duration is 30 minutes.")
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
-            # Maximum 2 hours (120 minutes) per day validation
-            if diff_mins > 120:
-                messages.error(request, "Permission limit exceeded: Maximum allowed duration is 2 hours (120 minutes) per day.")
-                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
-
             # Validate date is not before employee's joining date
             if profile.joining_date and perm_date < profile.joining_date:
                 messages.error(
@@ -158,22 +153,14 @@ def leave_list(request):
                 )
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
-            # Check monthly permission balance and request limits
+            # Check remaining permission balance (no max limit, no request count limit; strictly remaining time)
             month_balance = get_or_create_monthly_permission_balance(profile, perm_date.year, perm_date.month)
-            if month_balance.remaining_requests <= 0:
-                messages.error(
-                    request,
-                    f"Monthly permission limit reached: Maximum 2 permission requests allowed per calendar month. "
-                    f"You have 0 requests remaining for {perm_date.strftime('%B %Y')}."
-                )
-                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
-
             req_hours = Decimal(str(round(diff_mins / 60.0, 2)))
             if req_hours > month_balance.remaining_hours:
                 messages.error(
                     request,
-                    f"Requested duration ({diff_mins} mins / {req_hours}h) exceeds your remaining monthly permission balance "
-                    f"({month_balance.remaining_formatted()} remaining out of 5 hours for {perm_date.strftime('%B %Y')})."
+                    f"Requested duration ({diff_mins} mins / {req_hours}h) exceeds your remaining permission balance "
+                    f"({month_balance.remaining_formatted()} remaining for {perm_date.strftime('%B %Y')})."
                 )
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 

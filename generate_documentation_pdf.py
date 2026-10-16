@@ -403,8 +403,8 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
         ],
         [
             Paragraph("<b>MonthlyPermissionBalance</b><br/><code>apps.leave_management</code>", table_cell_bold),
-            Paragraph("employee (FK), year, month, total_hours_allowed (5.00), used_hours, total_requests_allowed (2), used_requests_count", table_cell_style),
-            Paragraph("Unique on (employee, year, month). Enforces strict monthly permission balance of 5 hours and 2 requests with zero rollover.", table_cell_style)
+            Paragraph("employee (FK), year, month, total_hours_allowed (5.00), used_hours, total_requests_allowed, used_requests_count", table_cell_style),
+            Paragraph("Unique on (employee, year, month). Enforces monthly permission balance (5 hours) calculated strictly against remaining balance with zero rollover.", table_cell_style)
         ],
         [
             Paragraph("<b>OfficePaidLeave</b><br/><code>apps.leave_management</code>", table_cell_bold),
@@ -482,6 +482,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     story.append(Paragraph("• <b>Mandatory Joining Date Capture:</b> During employee creation (both frontend form and backend processing), an official Employee Joining Date is strictly required and stored securely in <code>Employee.joining_date</code>.", bullet_style))
     story.append(Paragraph("• <b>Strict Inactive Treatment for Prior Dates:</b> The system’s attendance engine, monthly calendar views, and payroll algorithms across Employee, HR, and Admin dashboards evaluate records starting strictly from the actual joining date. All dates prior to the official joining date are rendered as inactive/non-working days (<code>pre-joining-day</code>) and are never marked as absent, flagged as missed punches, or subjected to salary deductions.", bullet_style))
     story.append(Paragraph("• <b>Live Multi-Dashboard Synchronization:</b> HR and Admin can update an employee's joining date through their respective quick-edit modals or full profile editors, immediately refreshing the employee's calendar and payroll calculations.", bullet_style))
+    story.append(Paragraph("• <b>Official Document Submission & Confidentiality Governance:</b> Employees can submit or change their official document (ID proof, academic credential, certificate, or resume) at any time through their Profile Dossier or Employee Dashboard. To protect sensitive personal data, viewing and downloading documents is strictly restricted to HR Managers and Administrators; regular employees see a secure confirmation badge without view/download capabilities.", bullet_style))
 
     story.append(Spacer(1, 14))
 
@@ -496,11 +497,12 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     ))
     story.append(Paragraph("Key Employee Features & Workflows:", h2_style))
     story.append(Paragraph("1. <b>Self-Service Punch Terminal:</b> Displays the real-time clock, live video viewfinder, GPS coordinates badge, and instant Punch In / Punch Out triggers.", bullet_style))
-    story.append(Paragraph("2. <b>Interactive Month Attendance Calendar:</b> Renders every day of the month with color-coded status badges: Green (Present / Office Holiday), Yellow (Half Day / 2h Permission), Red (Absent / LWP), Blue (Pending).", bullet_style))
+    story.append(Paragraph("2. <b>Interactive Month Attendance Calendar:</b> Renders every day of the month with high-contrast color-coded status indicators: Solid Green (Present / Office Holiday / Sunday), Solid Yellow (Half Day), Green with Yellow Border (Approved Permission), and Solid Red (Absent / LWP).", bullet_style))
     story.append(Paragraph("3. <b>Daily Work Log Submission:</b> Form allowing employees to submit projects worked on, tasks completed, hours spent, site location, and attach work verification photos.", bullet_style))
-    story.append(Paragraph("4. <b>Leave & 2-Hour Permission Application:</b> Dynamic form supporting Casual Leave, Sick Leave, and short permissions with real-time duration validation.", bullet_style))
+    story.append(Paragraph("4. <b>Leave & Permission Application:</b> Dynamic form supporting Casual Leave, Sick Leave, and Permission requests with real-time remaining-time duration validation (minimum 30 minutes, calculated strictly against the employee's remaining monthly permission quota with no arbitrary daily max or monthly request count limit).", bullet_style))
     story.append(Paragraph("5. <b>Assigned Daily Work Plans:</b> Dedicated table displaying tasks and schedules assigned by HR, with status badges (Assigned, In Progress, Completed).", bullet_style))
     story.append(Paragraph("6. <b>Direct HR Messaging:</b> Secure enquiry portal allowing staff to submit questions directly to the HR notification hub.", bullet_style))
+    story.append(Paragraph("7. <b>Official Document Management:</b> Dedicated horizontal bar widget and modal enabling employees to submit or change their document at any time under strict privacy governance.", bullet_style))
 
     story.append(PageBreak())
 
@@ -655,9 +657,9 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
             Paragraph("50% half-day salary credit. Work time between 270 and 539 minutes.", table_cell_style)
         ],
         [
-            Paragraph("<b>Approved Permission (Up to 2h)</b>", table_cell_bold),
+            Paragraph("<b>Approved Permission</b>", table_cell_bold),
             Paragraph("<font color='#047857'><b>Green Fill + Yellow Border</b> (<code>3px solid #f59e0b</code>)</font>", table_cell_style),
-            Paragraph("100% protected shift with ₹0.00 salary deduction. Deducts from monthly 5h permission balance.", table_cell_style)
+            Paragraph("100% protected shift with ₹0.00 salary deduction. Deducts from monthly remaining permission balance.", table_cell_style)
         ],
         [
             Paragraph("<b>Missed Punch / Absent</b>", table_cell_bold),
@@ -698,7 +700,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     ]))
     story.append(t_cal_colors)
     story.append(Spacer(1, 8))
-    story.append(Paragraph("• <b>Persistent Dashboard Color Legend:</b> A dedicated, responsive legend container is placed below the attendance calendar across Employee, HR, and Admin dashboards, clearly defining each color indicator and border pattern.", bullet_style))
+    story.append(Paragraph("• <b>Clean, High-Contrast Attendance Visualization:</b> High-contrast status colors and distinct borders provide immediate readability across Employee, HR, and Admin dashboards without requiring cluttered legend text containers.", bullet_style))
 
     story.append(Spacer(1, 14))
 
@@ -715,17 +717,17 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     story.append(Paragraph("2. <b>Strict Zero Carry-Forward Policy:</b> Unused casual leave from a prior month expires immediately at month-end. Unused leave does NOT accumulate or roll over.", bullet_style))
     story.append(Paragraph("3. <b>Automatic Casual Leave Restoration:</b> If an employee had a planned casual leave on a specific day, but subsequently reported to office and recorded valid attendance (&ge; 4.5 hours), the system cancels the leave and automatically restores the +1 day casual leave balance with an audit log.", bullet_style))
     story.append(Paragraph("4. <b>Leave Review Classification:</b> HR can classify requests as <b>Paid Casual Leave</b> (deducts 1d balance, full pay), <b>Paid Sick Leave</b> (full pay), or <b>Approved Permission</b> (no deduction).", bullet_style))
-    story.append(Paragraph("5. <b>Monthly Permission Balance (Casual Leave Section):</b> In addition to full-day leaves, active staff receive a dedicated monthly permission quota of <b>5 hours</b> and a maximum of <b>2 permission requests</b> per calendar month. Displayed prominently in the Casual Leave Balance stat card across Employee and HR dashboards.", bullet_style))
+    story.append(Paragraph("5. <b>Monthly Permission Balance (Casual Leave Section):</b> In addition to full-day leaves, active staff receive a dedicated monthly permission quota of <b>5 hours</b> per calendar month with no daily maximum limit and no request count limit. The system calculates and enforces requests strictly against the remaining permission time, displayed prominently in the Casual Leave Balance stat card across Employee and HR dashboards.", bullet_style))
 
     story.append(PageBreak())
 
     # =========================================================================
     # SECTION 11: TWO-HOUR PERMISSION REQUEST WORKFLOW
     # =========================================================================
-    story.append(Paragraph("11. Two-Hour Permission Request & Monthly Quota Workflow", h1_style))
+    story.append(Paragraph("11. Permission Request & Monthly Remaining Quota Workflow", h1_style))
     story.append(Paragraph(
-        "To accommodate brief personal appointments, banking tasks, or medical consultations without penalizing staff with full-day or half-day salary deductions, "
-        "the system features a dedicated <b>Permission (Up to 2 Hours)</b> module integrated with a 5-hour monthly quota.",
+        "To accommodate personal appointments, banking tasks, or medical consultations without penalizing staff with full-day or half-day salary deductions, "
+        "the system features a dedicated <b>Permission</b> module integrated with a 5-hour monthly quota calculated strictly against remaining balance.",
         body_style
     ))
 
@@ -733,18 +735,18 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
         [Paragraph("<b>Workflow Phase</b>", table_header_style), Paragraph("<b>User Actions & Frontend Experience</b>", table_header_style), Paragraph("<b>Backend Rules & System Integration</b>", table_header_style)],
         [
             Paragraph("<b>1. Employee Selection</b>", table_cell_bold),
-            Paragraph("Under Leave Category, employee selects <code>Permission (Up to 2 Hours)</code>. Standard date range fields hide, revealing Permission Date, From Time, and To Time, alongside monthly quota balance (e.g. 5h remaining, 2 requests left).", table_cell_style),
+            Paragraph("Under Leave Category, employee selects <code>Permission</code>. Standard date range fields hide, revealing Permission Date, From Time, and To Time, alongside current remaining permission hours.", table_cell_style),
             Paragraph("Frontend dynamic script binds to time inputs. Computes duration in minutes in real-time.", table_cell_style)
         ],
         [
             Paragraph("<b>2. Live Validation & Guardrails</b>", table_cell_bold),
-            Paragraph("Displays computed duration badge. Enforces daily limits: <b>Minimum 30 minutes, Maximum 2 hours</b>. Validates against remaining monthly permission hours (out of 5h) and remaining requests (out of 2). If limits are exceeded, shows red alert and disables submission.", table_cell_style),
-            Paragraph("Backend validates: 30 &le; duration &le; 120 minutes, requests &le; 2 per month, and total hours &le; 5.00h. Rejects duplicate submissions for the same working day.", table_cell_style)
+            Paragraph("Enforces policy limit: <b>Minimum 30 minutes</b>. Validates requested time strictly against remaining monthly permission balance. Eliminates arbitrary daily max and request count restrictions, allowing employees flexible scheduling within their quota.", table_cell_style),
+            Paragraph("Backend validates: duration &ge; 30 minutes, requested hours &le; remaining balance. Rejects duplicate submissions for the same working day.", table_cell_style)
         ],
         [
             Paragraph("<b>3. HR Review & Approval</b>", table_cell_bold),
             Paragraph("Request appears in HR Leave Review queue with duration and times. HR clicks <code>Review & Decide</code>; modal auto-selects <code>Approved Permission</code>.", table_cell_style),
-            Paragraph("Upon approval, backend sets <code>att.is_permission = True</code>, <code>att.permission_hours = Decimal('2.00')</code>, deducts approved duration from <code>MonthlyPermissionBalance.used_hours</code>, increments <code>used_requests_count</code>, and logs an immutable audit trail.", table_cell_style)
+            Paragraph("Upon approval, backend sets <code>att.is_permission = True</code>, records permission hours, deducts approved duration from <code>MonthlyPermissionBalance.used_hours</code>, and logs an immutable audit trail.", table_cell_style)
         ],
         [
             Paragraph("<b>4. Attendance & Salary Credit</b>", table_cell_bold),
@@ -769,7 +771,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     story.append(Paragraph("Automated Monthly Permission Balance Reset Routine:", h2_style))
     story.append(Paragraph(
         "On the 1st of every calendar month, the routine <code>refresh_all_active_employees_monthly_permission()</code> executes. "
-        "It resets the permission quota for all active employees to the full 5 hours and 2 requests. Unused permission hours do NOT roll over to the next month.",
+        "It resets the permission quota for all active employees to the full 5 hours. Unused permission hours do NOT roll over to the next month.",
         body_style
     ))
 
@@ -840,7 +842,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
         [Paragraph("<b>Days in Billing Month</b>", table_cell_bold), Paragraph("30 Days (e.g. November)", table_cell_style), Paragraph("Days in calendar month: calendar.monthrange(year, month)[1].", table_cell_style)],
         [Paragraph("<b>Derived Daily Wage Rate</b>", table_cell_bold), Paragraph("₹1,000.00 per day", table_cell_style), Paragraph("₹30,000 / 30 = ₹1,000.00 per day.", table_cell_style)],
         [Paragraph("<b>Full Days (&ge; 9 hours)</b>", table_cell_bold), Paragraph("24 Days", table_cell_style), Paragraph("100% pay credit = 24 &times; ₹1,000 = ₹24,000.00 (Zero deduction).", table_cell_style)],
-        [Paragraph("<b>Approved 2-Hour Permission</b>", table_cell_bold), Paragraph("1 Day", table_cell_style), Paragraph("100% full wage credit = ₹1,000.00 (Zero deduction).", table_cell_style)],
+        [Paragraph("<b>Approved Permission</b>", table_cell_bold), Paragraph("1 Day", table_cell_style), Paragraph("100% full wage credit = ₹1,000.00 (Zero salary deduction, protected shift).", table_cell_style)],
         [Paragraph("<b>Approved Casual Leave</b>", table_cell_bold), Paragraph("1 Day", table_cell_style), Paragraph("100% full wage credit = ₹1,000.00 (Deducts 1d from balance, 0 deduction).", table_cell_style)],
         [Paragraph("<b>Office Holidays (Declared)</b>", table_cell_bold), Paragraph("2 Days", table_cell_style), Paragraph("100% full wage credit = 2 &times; ₹1,000 = ₹2,000.00 (Zero deduction).", table_cell_style)],
         [Paragraph("<b>Half Days (4.5h to &lt;9h)</b>", table_cell_bold), Paragraph("1 Day (e.g. 5 hours worked)", table_cell_style), Paragraph("Deduction = 0.5 &times; ₹1,000.00 = <b>₹500.00 deduction</b>.", table_cell_style)],
@@ -864,7 +866,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     story.append(Paragraph("Special Payroll Calculation Rules:", h2_style))
     story.append(Paragraph("• <b>Joining Date Attendance Isolation:</b> Payroll strictly starts attendance calculations from <code>Employee.joining_date</code>. All dates prior to the official joining date are rendered inactive and excluded from absenteeism, missed punches, and salary deductions.", bullet_style))
     story.append(Paragraph("• <b>Sunday Weekly Off Credit & Sandwich Rule:</b> Sundays are credited with 100% full wage pay. If an employee incurs continuous unapproved absences encompassing Sunday (up to 5 continuous days including Sunday), the sandwich rule treats the Sunday as unpaid LWP and deducts 1 daily rate.", bullet_style))
-    story.append(Paragraph("• <b>Permission Shift Protection:</b> Up to 2 hours of approved permission per day (within the monthly 5-hour quota) carries 100% full wage credit with ₹0.00 salary deduction.", bullet_style))
+    story.append(Paragraph("• <b>Permission Shift Protection:</b> Approved permission (within the monthly 5-hour quota) carries 100% full wage credit with ₹0.00 salary deduction.", bullet_style))
 
     story.append(Spacer(1, 14))
 

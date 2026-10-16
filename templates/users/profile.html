@@ -34,15 +34,37 @@
           <th>Submitted Document</th>
           <td>
             {% if profile.document %}
-            <a href="{{ profile.document.url }}" target="_blank" class="btn btn-outline btn-sm" style="color: #2563eb; border-color: #3b82f6;">
-              📄 View Document
-            </a>
+              {% if request.user.employee.role in 'HR,ADMIN' or request.user.is_superuser %}
+              <a href="{{ profile.document.url }}" target="_blank" class="btn btn-outline btn-sm" style="color: #2563eb; border-color: #3b82f6;">
+                📄 View Document
+              </a>
+              {% else %}
+              <span class="badge badge-success">Document Submitted</span>
+              <span style="color: #64748b; font-size: 12px; margin-left: 6px;">(Confidential • Viewable only by HR & Admin)</span>
+              {% endif %}
             {% else %}
             <span style="color: #94a3b8; font-size: 12px;">No document uploaded</span>
             {% endif %}
           </td>
         </tr>
       </table>
+
+      <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+        <h4 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 600; color: #1e293b;">
+          📄 Submit / Change Document
+        </h4>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
+          You can submit or change your official document at any time. Submitted documents are stored securely and viewable only by HR and Administrator.
+        </p>
+        <form method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="update_document" value="1">
+          <input type="file" name="document" required class="form-control" style="font-size: 12.5px; max-width: 280px; padding: 6px 10px;">
+          <button type="submit" class="btn btn-primary btn-sm">
+            {% if profile.document %}Change Document{% else %}Submit Document{% endif %}
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 

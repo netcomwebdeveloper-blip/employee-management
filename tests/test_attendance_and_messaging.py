@@ -416,13 +416,13 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertIn('Medical consultation', perm.reason)
         self.assertIn('1h 30m', perm.approval_type)
 
-        # 2. Permission duration exceeding 2 hours (> 120 mins) must be rejected
+        # 2. Permission duration exceeding remaining monthly balance (> remaining quota) must be rejected
         other_date = date(2026, 10, 21)
         resp_invalid = self.client.post('/leave/', {
             'leave_type': 'Permission (Up to 2 Hours)',
             'permission_date': other_date.strftime('%Y-%m-%d'),
-            'from_time': '10:00',
-            'to_time': '12:30',
+            'from_time': '09:00',
+            'to_time': '16:00',  # 7 hours exceeds 5.0h monthly balance
             'reason': 'Personal errand'
         }, follow=True)
         self.assertEqual(resp_invalid.status_code, 200)
@@ -464,4 +464,38 @@ class AttendanceAndMessagingTests(TestCase):
         payroll_data = calculate_payroll_for_employee(self.emp_profile, 2026, 10)
         self.assertEqual(payroll_data['permission_days'], 1)
         self.assertEqual(payroll_data['absent_days'], 0)
+
+    def test_document_submission_and_privacy_restriction(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.login(username='emp_john', password='john12345')
+
+        # Employee uploads document from profile
+        test_file = SimpleUploadedFile("my_doc.pdf", b"sample resume data", content_type="application/pdf")
+        resp = self.client.post('/users/profile/', {'update_document': '1', 'document': test_file}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.emp_profile.refresh_from_db()
+        self.assertTrue(self.emp_profile.document)
+
+        # On Employee profile page, standard employee cannot see download link
+        resp_profile = self.client.get('/users/profile/')
+        self.assertEqual(resp_profile.status_code, 200)
+        self.assertContains(resp_profile, 'Document Submitted')
+        self.assertContains(resp_profile, 'Confidential')
+        self.assertNotContains(resp_profile, '📄 View Document')
+
+        # Employee can also update document from employee dashboard at any time
+        new_file = SimpleUploadedFile("updated_doc.pdf", b"updated resume data", content_type="application/pdf")
+        resp_dash = self.client.post('/dashboard/', {'action': 'submit_document', 'document': new_file}, follow=True)
+        self.assertEqual(resp_dash.status_code, 200)
+        self.emp_profile.refresh_from_db()
+        self.assertIn("updated_doc", self.emp_profile.document.name)
+
+        self.client.logout()
+
+        # HR can view the document
+        self.client.login(username='hr_user', password='hr12345')
+        resp_hr = self.client.get(f'/employees/{self.emp_profile.id}/')
+        self.assertEqual(resp_hr.status_code, 200)
+        self.assertContains(resp_hr, 'View Submitted Document')
+
 

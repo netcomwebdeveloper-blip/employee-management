@@ -86,8 +86,25 @@
       <span class="punch-stat-label">Casual Leave Balance</span>
       <span class="punch-stat-value" style="color: var(--primary);">{{ profile.casual_leave_balance }} Days</span>
       <div style="font-size: 11px; color: #0284c7; font-weight: 600; margin-top: 3px; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
-        ⏱️ Perm: <b>{{ permission_balance.remaining_formatted }}</b> / 5h (<b>{{ permission_balance.remaining_requests }}</b> left)
+        ⏱️ Remaining Permission: <b>{{ permission_balance.remaining_formatted }}</b>
       </div>
+    </div>
+  </div>
+
+  <div class="punch-stat-item">
+    <div class="punch-stat-icon icon-blue">📄</div>
+    <div class="punch-stat-info">
+      <span class="punch-stat-label">Official Document</span>
+      {% if profile.document %}
+      <span class="punch-stat-value" style="color: #059669; font-size: 13.5px; font-weight: 700;">Submitted ✅</span>
+      <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Confidential • HR & Admin view only</div>
+      {% else %}
+      <span class="punch-stat-value" style="color: #ea580c; font-size: 13px; font-weight: 600;">Not Uploaded</span>
+      <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Submit anytime</div>
+      {% endif %}
+      <button type="button" onclick="document.getElementById('docSubmitModal').classList.add('active')" class="btn btn-outline btn-sm" style="margin-top: 4px; padding: 2px 8px; font-size: 11px;">
+        {% if profile.document %}Change Document{% else %}Submit Document{% endif %}
+      </button>
     </div>
   </div>
 </div>
@@ -215,35 +232,6 @@
           {% endfor %}
         </tbody>
       </table>
-
-      <!-- Calendar Status Color Legend -->
-      <div class="calendar-legend" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; padding: 10px 14px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; font-size: 11.5px; align-items: center;">
-        <span style="font-weight: 700; color: var(--gray-700); margin-right: 2px;">Legend:</span>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #16a34a; border-radius: 3px;"></span>
-          <span>Full Day (9h+)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #f59e0b; border-radius: 3px;"></span>
-          <span>Half Day (4.5h–&lt;9h)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #ecfdf5; border: 2.5px solid #f59e0b; border-radius: 3px;"></span>
-          <span>Permission (Up to 2h)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #ef4444; border-radius: 3px;"></span>
-          <span>Missed Punch / Absent</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #10b981; border: 1.5px solid #059669; border-radius: 3px;"></span>
-          <span>Holiday / Sunday (Paid)</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <span style="display: inline-block; width: 13px; height: 13px; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 3px;"></span>
-          <span>Prior to Joining</span>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -409,19 +397,8 @@
           </div>
         </div>
 
-        <!-- Permission-specific Fields (Dynamic when "Permission (Up to 2 Hours)" selected) -->
+        <!-- Permission-specific Fields (Dynamic when "Permission" selected) -->
         <div id="permissionFieldsGroup" style="display: none;">
-          <div style="margin-bottom: 14px; padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <span style="font-weight: 700; color: #166534;">⏱️ Monthly Permission Quota:</span>
-              <span style="color: #15803d; font-weight: 600; margin-left: 4px;">5 Hours &bull; Max 2 Requests/Month</span>
-            </div>
-            <div style="text-align: right;">
-              <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 12px; padding: 4px 8px;">
-                Remaining: {{ permission_balance.remaining_formatted|default:"5h" }} ({{ permission_balance.remaining_requests|default:2 }} reqs left)
-              </span>
-            </div>
-          </div>
           <div class="form-group">
             <label class="form-label">Permission Date</label>
             <input type="date" name="permission_date" id="permDateInput" class="form-input" value="{{ today|date:'Y-m-d' }}" onchange="calculatePermissionDuration()">
@@ -436,13 +413,7 @@
               <input type="time" name="to_time" id="permToTime" class="form-input" value="11:30" onchange="calculatePermissionDuration()">
             </div>
           </div>
-          <div style="margin-bottom: 14px; padding: 10px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px;">
-            <span style="color: #1e40af; font-weight: 600;">⏱️ Calculated Duration:</span>
-            <span id="permDurationDisplay" style="font-weight: 700; color: #2563eb; margin-left: 6px;">1 hr 30 mins</span>
-            <div id="permDurationNotice" style="color: #64748b; font-size: 11.5px; margin-top: 3px;">
-              Minimum duration is 30 minutes, maximum is 2 hours (120 minutes) per day. Zero salary deduction on HR approval.
-            </div>
-          </div>
+          <div id="permDurationNotice" style="display: none; margin-bottom: 12px; font-size: 12px;"></div>
         </div>
 
         <div class="form-group">
@@ -846,7 +817,6 @@
   function calculatePermissionDuration() {
     const fromTime = document.getElementById('permFromTime').value;
     const toTime = document.getElementById('permToTime').value;
-    const display = document.getElementById('permDurationDisplay');
     const notice = document.getElementById('permDurationNotice');
     const submitBtn = document.getElementById('submitLeaveBtn');
     const permDate = document.getElementById('permDateInput').value;
@@ -861,41 +831,31 @@
     const [fh, fm] = fromTime.split(':').map(Number);
     const [th, tm] = toTime.split(':').map(Number);
     const diffMins = (th * 60 + tm) - (fh * 60 + fm);
-
-    const remainingRequests = {{ permission_balance.remaining_requests|default:2 }};
     const remainingHours = {{ permission_balance.remaining_hours|default:5.00 }};
 
-    if (remainingRequests <= 0) {
-      display.innerHTML = '<span style="color:#ef4444; font-weight: 700;">Monthly Limit Reached (0 requests left)</span>';
-      if (notice) notice.innerHTML = '<span style="color:#ef4444; font-weight:600;">You have used all 2 allowed permission requests for this month.</span>';
-      if (submitBtn) submitBtn.disabled = true;
-      return;
-    }
-
     if (diffMins <= 0) {
-      display.innerHTML = '<span style="color:#ef4444; font-weight: 700;">Invalid Range (To time must be after From time)</span>';
-      if (notice) notice.innerHTML = '<span style="color:#ef4444;">Please select an end time later than start time.</span>';
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = '<span style="color:#ef4444; font-weight: 600;">Invalid time range: End time must be after start time.</span>';
+      }
       if (submitBtn) submitBtn.disabled = true;
     } else if (diffMins < 30) {
-      display.innerHTML = `<span style="color:#ef4444; font-weight: 700;">${diffMins} mins (Below 30-min minimum)</span>`;
-      if (notice) notice.innerHTML = '<span style="color:#ef4444; font-weight:600;">Minimum allowed permission duration is 30 minutes. Please adjust times.</span>';
-      if (submitBtn) submitBtn.disabled = true;
-    } else if (diffMins > 120) {
-      const hrs = Math.floor(diffMins / 60);
-      const mins = diffMins % 60;
-      display.innerHTML = `<span style="color:#ef4444; font-weight: 700;">${hrs}h ${mins}m (Exceeds 2-hour daily limit)</span>`;
-      if (notice) notice.innerHTML = '<span style="color:#ef4444; font-weight:600;">Maximum allowed duration is 2 hours (120 minutes) per day. Please adjust times.</span>';
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = '<span style="color:#ef4444; font-weight: 600;">Minimum allowed duration is 30 minutes.</span>';
+      }
       if (submitBtn) submitBtn.disabled = true;
     } else if ((diffMins / 60.0) > remainingHours) {
-      display.innerHTML = `<span style="color:#ef4444; font-weight: 700;">Exceeds Monthly Balance</span>`;
-      if (notice) notice.innerHTML = `<span style="color:#ef4444; font-weight:600;">Requested time exceeds your remaining monthly permission balance (${remainingHours.toFixed(1)}h).</span>`;
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = `<span style="color:#ef4444; font-weight: 600;">Requested time exceeds remaining permission balance (${remainingHours.toFixed(1)}h remaining).</span>`;
+      }
       if (submitBtn) submitBtn.disabled = true;
     } else {
-      const hrs = Math.floor(diffMins / 60);
-      const mins = diffMins % 60;
-      const durLabel = hrs > 0 ? (mins > 0 ? `${hrs}h ${mins}m` : `${hrs} hr(s)`) : `${mins} mins`;
-      display.innerHTML = `<span style="color:#10b981; font-weight:700;">${durLabel} (Valid)</span>`;
-      if (notice) notice.innerHTML = '<span style="color:#059669;">Valid duration within 30m–2h policy. Zero salary deduction on HR approval.</span>';
+      if (notice) {
+        notice.style.display = 'none';
+        notice.innerHTML = '';
+      }
       if (submitBtn) submitBtn.disabled = false;
     }
   }
@@ -912,6 +872,37 @@
     <div style="margin-top: 12px;">
       <button type="button" class="btn btn-outline" style="color: #fff; border-color: rgba(255,255,255,0.4);" onclick="closeEmpImageModal()">Close Preview</button>
     </div>
+  </div>
+<!-- Employee Document Submission / Change Modal -->
+<div class="modal-overlay" id="docSubmitModal" onclick="document.getElementById('docSubmitModal').classList.remove('active')">
+  <div class="modal-card" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--gray-900);">
+        📄 {% if profile.document %}Change Official Document{% else %}Submit Official Document{% endif %}
+      </h3>
+      <button type="button" class="btn btn-outline btn-sm" style="padding: 2px 8px; border-radius: 50%;" onclick="document.getElementById('docSubmitModal').classList.remove('active')">&times;</button>
+    </div>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="submit_document">
+      <div>
+        <p style="font-size: 13px; color: var(--gray-600); margin-bottom: 14px; line-height: 1.5;">
+          You can submit or change your official document (e.g. ID card, resume, credentials, or signed policy) at any time.
+        </p>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; color: #166534; line-height: 1.4;">
+          🔒 <b>Confidential Document Policy:</b> Uploaded documents are securely archived. To protect employee privacy, submitted documents are strictly viewable by HR Personnel and Administrators only.
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="font-weight: 600; font-size: 13px;">Choose Document File *</label>
+          <input type="file" name="document" required class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
+          <small style="color: var(--gray-500); font-size: 11px; display: block; margin-top: 4px;">Accepted file types: PDF, JPG, PNG, DOCX</small>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--gray-200); padding-top: 14px; margin-top: 10px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('docSubmitModal').classList.remove('active')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Upload & Save</button>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}

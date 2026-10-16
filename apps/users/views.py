@@ -72,6 +72,24 @@ def user_profile_view(request):
                     for err in err_list:
                         messages.error(request, err)
 
+        if 'update_document' in request.POST or 'document' in request.FILES:
+            doc_file = request.FILES.get('document')
+            if doc_file:
+                if not profile:
+                    try:
+                        from apps.employees.models import Employee
+                        profile = Employee.objects.get(user=request.user)
+                    except Exception:
+                        profile = None
+                if profile:
+                    profile.document = doc_file
+                    profile.save(update_fields=['document'])
+                    messages.success(request, 'Your document was successfully submitted/updated! Only HR and Administrators are authorized to view it.')
+                    return redirect('users:profile')
+            else:
+                messages.error(request, 'Please select a valid document file to upload.')
+                return redirect('users:profile')
+
     return render(request, 'users/profile.html', {
         'profile': profile,
         'password_form': password_form,

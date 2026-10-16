@@ -1133,6 +1133,17 @@ def employee_dashboard(request, profile):
             messages.success(request, "Your message has been sent directly to the HR department. HR will review and address your enquiry.")
         return redirect('dashboard:index')
 
+    # Handle Employee "Submit / Change Document" (at any time)
+    if request.method == 'POST' and request.POST.get('action') == 'submit_document':
+        doc_file = request.FILES.get('document')
+        if doc_file:
+            profile.document = doc_file
+            profile.save(update_fields=['document'])
+            messages.success(request, "Your document was successfully submitted/updated! Only HR and Administrators are authorized to view it.")
+        else:
+            messages.error(request, "Please select a valid document file to upload.")
+        return redirect('dashboard:index')
+
     year = request.GET.get('year')
     month = request.GET.get('month')
 
