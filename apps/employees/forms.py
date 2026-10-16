@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
 from apps.departments.models import Department, Designation
 from .models import Employee
 
@@ -39,6 +40,12 @@ class EmployeeCreateForm(forms.Form):
         queryset=Designation.objects.all(), required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    joining_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'class': 'form-input', 'type': 'date', 'required': 'required'}),
+        label="Employee Joining Date",
+        initial=timezone.localdate
+    )
     phone = forms.CharField(
         max_length=20, required=False,
         widget=forms.TextInput(attrs={'class': 'form-input', 'placeholder': '+91 9876543210'})
@@ -70,6 +77,10 @@ class EmployeeCreateForm(forms.Form):
             raise forms.ValidationError("Employee Code already registered.")
         return code
 
+    def clean_joining_date(self):
+        val = self.cleaned_data.get('joining_date')
+        return val or timezone.localdate()
+
     def save(self):
         cd = self.cleaned_data
         is_admin = cd['role'] == 'ADMIN'
@@ -88,6 +99,7 @@ class EmployeeCreateForm(forms.Form):
             role=cd['role'],
             department=cd['department'],
             designation=cd['designation'],
+            joining_date=cd.get('joining_date') or timezone.localdate(),
             phone=cd['phone'],
             address=cd['address'],
             basic_salary=cd['basic_salary'],
@@ -111,7 +123,7 @@ class EmployeeUpdateForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = [
-            'role', 'department', 'designation', 'phone', 'address',
+            'role', 'department', 'designation', 'joining_date', 'phone', 'address',
             'basic_salary', 'casual_leave_balance', 'is_active_employee',
             'profile_picture', 'document'
         ]
@@ -119,6 +131,7 @@ class EmployeeUpdateForm(forms.ModelForm):
             'role': forms.Select(attrs={'class': 'form-select'}),
             'department': forms.Select(attrs={'class': 'form-select'}),
             'designation': forms.Select(attrs={'class': 'form-select'}),
+            'joining_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'phone': forms.TextInput(attrs={'class': 'form-input'}),
             'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
             'basic_salary': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),

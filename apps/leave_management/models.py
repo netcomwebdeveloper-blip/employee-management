@@ -98,3 +98,45 @@ class OfficePaidLeave(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.title}"
+
+
+class MonthlyPermissionBalance(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='permission_balances')
+    year = models.IntegerField()
+    month = models.IntegerField()
+    total_hours_allowed = models.DecimalField(max_digits=4, decimal_places=2, default=1.0 * 5.0, help_text="Total permission hours allowed per month (Default 5.00 hours)")
+    used_hours = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, help_text="Approved permission hours used in this month")
+    total_requests_allowed = models.PositiveIntegerField(default=2, help_text="Maximum permission requests allowed per month (Default 2)")
+    used_requests_count = models.PositiveIntegerField(default=0, help_text="Number of approved permission requests in this month")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('employee', 'year', 'month')
+        verbose_name = 'Monthly Permission Balance'
+        verbose_name_plural = 'Monthly Permission Balances'
+
+    def __str__(self):
+        return f"{self.employee.employee_code} - {self.month}/{self.year} (Rem: {self.remaining_formatted()}, Reqs: {self.remaining_requests})"
+
+    @property
+    def remaining_hours(self):
+        from decimal import Decimal
+        rem = Decimal(str(self.total_hours_allowed)) - Decimal(str(self.used_hours))
+        return max(Decimal('0.00'), rem)
+
+    @property
+    def remaining_requests(self):
+        return max(0, self.total_requests_allowed - self.used_requests_count)
+
+    def remaining_formatted(self):
+        rem = float(self.remaining_hours)
+        hours = int(rem)
+        minutes = int(round((rem - hours) * 60))
+        if hours > 0 and minutes > 0:
+            return f"{hours}h {minutes}m"
+        elif hours > 0:
+            return f"{hours}h"
+        elif minutes > 0:
+            return f"{minutes}m"
+        return "0h"

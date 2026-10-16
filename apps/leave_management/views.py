@@ -1,4 +1,6 @@
-from datetime import timedelta
+from decimal import Decimal
+import re
+from datetime import timedelta, datetime, time
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,8 +8,42 @@ from django.utils import timezone
 from django.db.models import Sum
 from apps.users.decorators import hr_or_admin_required
 from apps.attendance.models import Attendance, AttendanceAuditLog
-from .models import LeaveRequest, MonthlyLeaveCredit, HRNotification
+from .models import LeaveRequest, MonthlyLeaveCredit, MonthlyPermissionBalance, HRNotification
 from .forms import LeaveRequestForm
+
+def get_or_create_monthly_permission_balance(employee, year=None, month=None):
+    """
+    Retrieves or initializes the monthly permission balance for an employee.
+    Each employee receives a maximum of 5.00 hours and 2 requests per calendar month.
+    Resets at the start of each month.
+    """
+    if not employee:
+        return None
+    today = timezone.localdate()
+    y = int(year) if year else today.year
+    m = int(month) if month else today.month
+
+    balance, created = MonthlyPermissionBalance.objects.get_or_create(
+        employee=employee,
+        year=y,
+        month=m,
+        defaults={
+            'total_hours_allowed': Decimal('5.00'),
+            'used_hours': Decimal('0.00'),
+            'total_requests_allowed': 2,
+            'used_requests_count': 0
+        }
+    )
+    return balance
+
+def refresh_all_active_employees_monthly_permission():
+    """
+    Initializes/refreshes monthly permission balances for all active employees.
+    """
+    today = timezone.localdate()
+    from apps.employees.models import Employee
+    for emp in Employee.objects.filter(is_active_employee=True):
+        get_or_create_monthly_permission_balance(emp, today.year, today.month)
 
 def refresh_monthly_leave_for_employee(employee, today=None):
     """
@@ -29,6 +65,9 @@ def refresh_monthly_leave_for_employee(employee, today=None):
         defaults={'casual_added': 1}
     )
 
+    # Also ensure monthly permission balance exists
+    get_or_create_monthly_permission_balance(employee, today.year, today.month)
+
     if created:
         # New month reset: refresh to strictly 1 casual leave per month, zero carry-forward
         employee.casual_leave_balance = 1
@@ -49,6 +88,7 @@ def refresh_all_active_employees_monthly_leave():
     from apps.employees.models import Employee
     for emp in Employee.objects.filter(is_active_employee=True):
         refresh_monthly_leave_for_employee(emp, today)
+        get_or_create_monthly_permission_balance(emp, today.year, today.month)
 
 # Backward compatibility alias
 auto_credit_monthly_leave = refresh_monthly_leave_for_employee
@@ -56,8 +96,10 @@ auto_credit_monthly_leave = refresh_monthly_leave_for_employee
 @login_required
 def leave_list(request):
     profile = getattr(request.user, 'employee', None)
+    perm_balance = None
     if profile:
         refresh_monthly_leave_for_employee(profile)
+        perm_balance = get_or_create_monthly_permission_balance(profile)
 
     is_management = profile and (profile.role in ('ADMIN', 'HR') or request.user.is_superuser)
 
@@ -83,7 +125,6 @@ def leave_list(request):
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
             try:
-                from datetime import datetime, time
                 perm_date = datetime.strptime(perm_date_str[:10], '%Y-%m-%d').date()
                 fh, fm = [int(p) for p in from_time_str.split(':')[:2]]
                 th, tm = [int(p) for p in to_time_str.split(':')[:2]]
@@ -98,8 +139,42 @@ def leave_list(request):
                 messages.error(request, "Invalid time range: To Time must be after From Time.")
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
+            # Minimum 30 minutes validation
+            if diff_mins < 30:
+                messages.error(request, "Permission limit: Minimum allowed duration is 30 minutes.")
+                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
+
+            # Maximum 2 hours (120 minutes) per day validation
             if diff_mins > 120:
-                messages.error(request, "Permission limit exceeded: Maximum allowed duration is 2 hours (120 minutes).")
+                messages.error(request, "Permission limit exceeded: Maximum allowed duration is 2 hours (120 minutes) per day.")
+                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
+
+            # Validate date is not before employee's joining date
+            if profile.joining_date and perm_date < profile.joining_date:
+                messages.error(
+                    request,
+                    f"Invalid date: You cannot request permission for {perm_date.strftime('%b %d, %Y')}, "
+                    f"which is before your official joining date ({profile.joining_date.strftime('%b %d, %Y')})."
+                )
+                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
+
+            # Check monthly permission balance and request limits
+            month_balance = get_or_create_monthly_permission_balance(profile, perm_date.year, perm_date.month)
+            if month_balance.remaining_requests <= 0:
+                messages.error(
+                    request,
+                    f"Monthly permission limit reached: Maximum 2 permission requests allowed per calendar month. "
+                    f"You have 0 requests remaining for {perm_date.strftime('%B %Y')}."
+                )
+                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
+
+            req_hours = Decimal(str(round(diff_mins / 60.0, 2)))
+            if req_hours > month_balance.remaining_hours:
+                messages.error(
+                    request,
+                    f"Requested duration ({diff_mins} mins / {req_hours}h) exceeds your remaining monthly permission balance "
+                    f"({month_balance.remaining_formatted()} remaining out of 5 hours for {perm_date.strftime('%B %Y')})."
+                )
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
             # Prevent duplicate / overlapping permission requests for the same date
@@ -145,7 +220,7 @@ def leave_list(request):
                 leave_request=leave
             )
 
-            messages.success(request, f"Permission request for {dur_str} on {perm_date.strftime('%b %d, %Y')} submitted for HR approval!")
+            messages.success(request, f"Permission request for {dur_str} on {perm_date.strftime('%b %d, %Y')} submitted for HR approval! (Remaining: {month_balance.remaining_formatted()} / {month_balance.remaining_requests} requests)")
             return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
         apply_form = LeaveRequestForm(request.POST)
@@ -205,12 +280,31 @@ def leave_status_update(request, pk, status=None):
     if status in ('Approved', 'Rejected'):
         if status == 'Approved':
             if leave.leave_type in ('Permission (Up to 2 Hours)', 'Permission') or classification == 'Approved Permission':
-                from decimal import Decimal
                 leave.is_paid = True
                 leave.approval_type = 'Approved Permission'
                 leave.status = 'Approved'
                 leave.reviewed_by = request.user
                 leave.save()
+
+                # Parse duration in minutes from leave reason
+                dur_hm = re.search(r'\((\d+)h\s*(\d*)m?\)', leave.reason)
+                dur_match = re.search(r'\((\d+)\s*mins?\)', leave.reason)
+                if dur_hm:
+                    h_val = int(dur_hm.group(1))
+                    m_val = int(dur_hm.group(2)) if dur_hm.group(2) else 0
+                    dur_in_mins = h_val * 60 + m_val
+                elif dur_match:
+                    dur_in_mins = int(dur_match.group(1))
+                else:
+                    dur_in_mins = 120
+                perm_hrs = Decimal(str(round(dur_in_mins / 60.0, 2)))
+
+                # Deduct from MonthlyPermissionBalance upon fresh approval
+                if old_status != 'Approved':
+                    month_bal = get_or_create_monthly_permission_balance(leave.employee, leave.from_date.year, leave.from_date.month)
+                    month_bal.used_hours = min(month_bal.total_hours_allowed, month_bal.used_hours + perm_hrs)
+                    month_bal.used_requests_count = min(month_bal.total_requests_allowed, month_bal.used_requests_count + 1)
+                    month_bal.save()
 
                 att, created = Attendance.objects.get_or_create(employee=leave.employee, date=leave.from_date)
                 att.is_permission = True
@@ -239,7 +333,7 @@ def leave_status_update(request, pk, status=None):
                     new_values=f"Approved Permission: {att.permission_hours}h, Attendance Status: {att.status}",
                     ip_address=request.META.get('REMOTE_ADDR', '')
                 )
-                messages.success(request, f"Permission request for {leave.employee.display_name()} approved successfully with full salary credit.")
+                messages.success(request, f"Permission request for {leave.employee.display_name()} ({perm_hrs}h) approved successfully. Monthly permission balance updated.")
                 HRNotification.objects.filter(leave_request=leave).update(is_read=True)
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
@@ -300,11 +394,29 @@ def leave_status_update(request, pk, status=None):
 
         elif status == 'Rejected':
             if leave.leave_type in ('Permission (Up to 2 Hours)', 'Permission'):
-                from decimal import Decimal
                 leave.status = 'Rejected'
                 leave.reviewed_by = request.user
                 leave.rejection_reason = rejection_reason or 'Permission request rejected by HR.'
                 leave.save()
+
+                # Revert monthly permission balance if previously approved
+                if old_status == 'Approved':
+                    dur_hm = re.search(r'\((\d+)h\s*(\d*)m?\)', leave.reason)
+                    dur_match = re.search(r'\((\d+)\s*mins?\)', leave.reason)
+                    if dur_hm:
+                        h_val = int(dur_hm.group(1))
+                        m_val = int(dur_hm.group(2)) if dur_hm.group(2) else 0
+                        dur_in_mins = h_val * 60 + m_val
+                    elif dur_match:
+                        dur_in_mins = int(dur_match.group(1))
+                    else:
+                        dur_in_mins = 120
+                    perm_hrs = Decimal(str(round(dur_in_mins / 60.0, 2)))
+
+                    month_bal = get_or_create_monthly_permission_balance(leave.employee, leave.from_date.year, leave.from_date.month)
+                    month_bal.used_hours = max(Decimal('0.00'), month_bal.used_hours - perm_hrs)
+                    month_bal.used_requests_count = max(0, month_bal.used_requests_count - 1)
+                    month_bal.save()
 
                 att = Attendance.objects.filter(employee=leave.employee, date=leave.from_date).first()
                 if att and att.is_permission:

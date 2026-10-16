@@ -14,7 +14,12 @@ from apps.attendance.forms import ManualAttendanceForm, DailyWorkForm, Biometric
 from apps.attendance.services import check_and_restore_casual_leave_on_attendance, reset_daily_missed_punch_in_status, mark_employee_official_duty
 from apps.leave_management.models import LeaveRequest, HRNotification, OfficePaidLeave
 from apps.leave_management.forms import LeaveRequestForm
-from apps.leave_management.views import auto_credit_monthly_leave, refresh_all_active_employees_monthly_leave
+from apps.leave_management.views import (
+    auto_credit_monthly_leave,
+    refresh_all_active_employees_monthly_leave,
+    get_or_create_monthly_permission_balance,
+    refresh_all_active_employees_monthly_permission,
+)
 from apps.payroll.models import PayrollRecord
 from .models import DashboardBanner, DashboardPopup
 
@@ -145,13 +150,80 @@ def build_employee_calendar(profile, year=None, month=None):
     )
     office_paid_leave_dates = {opl.date.day: opl for opl in office_paid_leaves}
 
+    joining_date = getattr(profile, 'joining_date', None) if profile else None
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    # Precompute unexcused absent days (only starting from joining date)
+    absent_days = set()
+    for day_num in range(1, days_in_month + 1):
+        d_date = date(year, month, day_num)
+        if joining_date and d_date < joining_date:
+            continue
+        if d_date > today:
+            continue
+        if day_num in missed_punch_dates:
+            absent_days.add(day_num)
+        elif (
+            day_num not in full_day_dates
+            and day_num not in half_day_dates
+            and day_num not in permission_dates
+            and day_num not in leave_dates
+            and day_num not in office_paid_leave_dates
+            and day_num not in official_duty_dates
+            and d_date.weekday() != 6
+            and d_date < today
+        ):
+            absent_days.add(day_num)
+
+    # Detect Sunday continuous absence / sandwich rule (up to 5 continuous days including Sunday)
+    sandwich_sundays = set()
+    for day_num in range(1, days_in_month + 1):
+        d_date = date(year, month, day_num)
+        if d_date.weekday() == 6:  # Sunday
+            if joining_date and d_date < joining_date:
+                continue
+            if d_date > today:
+                continue
+
+            # Check continuous unapproved absence around Sunday
+            pre_count = 0
+            chk = d_date - timedelta(days=1)
+            while chk.day in absent_days and chk.month == month and pre_count < 4:
+                pre_count += 1
+                chk -= timedelta(days=1)
+
+            post_count = 0
+            chk = d_date + timedelta(days=1)
+            while chk.day in absent_days and chk.month == month and (pre_count + 1 + post_count) < 5:
+                post_count += 1
+                chk += timedelta(days=1)
+
+            total_consecutive = pre_count + 1 + post_count
+            if (pre_count >= 1 and post_count >= 1) or total_consecutive >= 3:
+                sandwich_sundays.add(day_num)
+
     rows = []
     for week in month_days:
         row = []
         for day in week:
             if day == 0:
                 row.append({'day': '', 'class_name': 'empty-day', 'label': ''})
-            elif day in office_paid_leave_dates:
+                continue
+
+            d_date = date(year, month, day)
+
+            # Exclude days prior to official joining date
+            if profile and joining_date and d_date < joining_date:
+                row.append({
+                    'day': day,
+                    'class_name': 'pre-joining-day',
+                    'label': 'Prior to Joining Date',
+                    'tooltip': f"Employee joined on {joining_date.strftime('%b %d, %Y')}. Prior dates are excluded from attendance & salary calculations."
+                })
+                continue
+
+            # Declared Office Holiday (Paid) - Solid Green
+            if day in office_paid_leave_dates:
                 opl = office_paid_leave_dates[day]
                 row.append({
                     'day': day,
@@ -159,43 +231,87 @@ def build_employee_calendar(profile, year=None, month=None):
                     'label': f"Office Paid Leave: {opl.title}",
                     'tooltip': f"Paid Leave for the Office: {opl.title} ({opl.description or 'Full Pay Holiday'})"
                 })
+            # Official Office Duty (Present) - Solid Green
             elif day in official_duty_dates:
-                # Official Office Duty marked as Present in green
                 row.append({
                     'day': day,
                     'class_name': 'working-day',
                     'label': 'Official Duty (Present)',
-                    'tooltip': 'Official Office Duty / Work Assignment (Present)'
+                    'tooltip': 'Official Office Duty / Work Assignment (Present) — 100% Salary Credit'
                 })
+            # Approved Permission (Up to 2h) - Green with distinct yellow border
             elif day in permission_dates:
-                # Approved 2-hour permission in green with label “Permission – 2 Hours”
-                row.append({'day': day, 'class_name': 'permission-day', 'label': 'Permission – 2 Hours'})
-            elif day in half_day_dates:
-                # Half-day attendance in yellow
-                row.append({'day': day, 'class_name': 'half-day', 'label': 'Half Day'})
+                row.append({
+                    'day': day,
+                    'class_name': 'permission-day',
+                    'label': 'Permission – 2 Hours',
+                    'tooltip': 'Approved Permission (Up to 2 Hours) — Protected Shift with Zero Salary Deduction'
+                })
+            # Sunday Weekly Off Policy
+            elif d_date.weekday() == 6:
+                if day in sandwich_sundays:
+                    row.append({
+                        'day': day,
+                        'class_name': 'sunday-absent',
+                        'label': 'Sunday - Unpaid (Sandwich/Absence Policy)',
+                        'tooltip': 'Sunday treated as Unpaid / LWP due to continuous unapproved absence policy (up to 5 days)'
+                    })
+                else:
+                    row.append({
+                        'day': day,
+                        'class_name': 'sunday-holiday',
+                        'label': 'Sunday - Official Weekly Off (Paid)',
+                        'tooltip': 'Official Office Weekly Off (Sunday) — 100% Full-Day Paid Salary Credit'
+                    })
+            # Full Day Present (9h+) - Solid Green
             elif day in full_day_dates:
-                # Full-day attendance in green
-                row.append({'day': day, 'class_name': 'working-day', 'label': 'Full Day (9h)'})
+                row.append({
+                    'day': day,
+                    'class_name': 'working-day',
+                    'label': 'Full Day (9h)',
+                    'tooltip': 'Full-Day Present (9+ Hours Worked) — 100% Salary Credit'
+                })
+            # Half Day Present (4.5h to <9h) - Solid Yellow
+            elif day in half_day_dates:
+                row.append({
+                    'day': day,
+                    'class_name': 'half-day',
+                    'label': 'Half Day',
+                    'tooltip': 'Half-Day Present (4h 30m to <9h Worked) — 50% Half-Day Salary'
+                })
+            # Approved Leave - Green Tint / Border
             elif day in leave_dates:
-                # Approved leave days
-                row.append({'day': day, 'class_name': 'leave-day', 'label': 'Approved Leave'})
+                row.append({
+                    'day': day,
+                    'class_name': 'leave-day',
+                    'label': 'Approved Leave',
+                    'tooltip': 'Approved Paid Leave — Zero Salary Deduction'
+                })
+            # Missed Punch-In / Missing Punch-Out - Solid Red
             elif day in missed_punch_dates:
-                # Display missed punch or missing punch-out prominently in red
                 status_lbl = missed_punch_dates[day]
                 row.append({
                     'day': day,
-                    'class_name': 'rejected-leave-day',
+                    'class_name': 'missed-punch-day',
                     'label': status_lbl,
-                    'tooltip': f"Attendance Issue: {status_lbl} (Action Required)"
+                    'tooltip': f"Attendance Issue: {status_lbl} (Red - Unpaid / LWP until HR review)"
                 })
+            # Rejected Leave - Solid Red
             elif day in rejected_leave_dates:
-                # Rejected leave in red with clear rejection status and reason
                 rej = rejected_leave_dates[day]
                 row.append({
                     'day': day,
-                    'class_name': 'rejected-leave-day',
+                    'class_name': 'missed-punch-day rejected-leave-day',
                     'label': f"Rejected: {rej['reason'][:25]}",
-                    'tooltip': f"Rejected Leave Reason: {rej['reason']}"
+                    'tooltip': f"Rejected Leave: {rej['reason']}"
+                })
+            # Past Unexcused Working Day - Solid Red
+            elif day in absent_days:
+                row.append({
+                    'day': day,
+                    'class_name': 'missed-punch-day',
+                    'label': 'Absent / LWP',
+                    'tooltip': 'Missed Punch / Unexcused Absence (Red - Unpaid / LWP)'
                 })
             else:
                 row.append({'day': day, 'class_name': 'regular-day', 'label': ''})
@@ -394,6 +510,13 @@ def admin_dashboard(request, profile):
             target_emp.casual_leave_balance = max(0, int(request.POST.get('casual_leave_balance', 0)))
         except (ValueError, TypeError):
             pass
+
+        joining_date_val = request.POST.get('joining_date', '').strip()
+        if joining_date_val:
+            try:
+                target_emp.joining_date = datetime.strptime(joining_date_val[:10], '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
 
         target_emp.is_active_employee = (request.POST.get('is_active_employee') == 'on')
 
@@ -623,6 +746,8 @@ def admin_dashboard(request, profile):
         'missing_punch_out_attendances': Attendance.objects.filter(in_time__isnull=False, out_time__isnull=True).select_related('employee', 'employee__user', 'employee__department').order_by('-date')[:25],
         'hr_notifications': HRNotification.objects.filter(is_read=False)[:10],
         'employee_messages': HRNotification.objects.filter(recipient_role='HR').order_by('-created_at')[:30],
+        'permission_balance': get_or_create_monthly_permission_balance(profile, today.year, today.month),
+        'calendar_permission_balance': get_or_create_monthly_permission_balance(calendar_employee, calendar_context['current_year'], calendar_context['current_month']),
     }
     context.update(calendar_context)
     return render(request, 'dashboard/admin_dashboard.html', context)
@@ -752,6 +877,13 @@ def hr_dashboard(request, profile):
             target_emp.casual_leave_balance = max(0, int(request.POST.get('casual_leave_balance', 0)))
         except (ValueError, TypeError):
             pass
+
+        joining_date_val = request.POST.get('joining_date', '').strip()
+        if joining_date_val:
+            try:
+                target_emp.joining_date = datetime.strptime(joining_date_val[:10], '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
 
         new_password = request.POST.get('password', '').strip()
         if new_password:
@@ -965,6 +1097,8 @@ def hr_dashboard(request, profile):
         'missing_punch_out_attendances': Attendance.objects.filter(in_time__isnull=False, out_time__isnull=True).select_related('employee', 'employee__user', 'employee__department').order_by('-date')[:25],
         'hr_notifications': HRNotification.objects.filter(is_read=False)[:10],
         'employee_messages': employee_messages,
+        'permission_balance': get_or_create_monthly_permission_balance(profile, today.year, today.month),
+        'calendar_permission_balance': get_or_create_monthly_permission_balance(calendar_employee, calendar_context['current_year'], calendar_context['current_month']),
     }
     context.update(calendar_context)
     return render(request, 'dashboard/hr_dashboard.html', context)
@@ -1038,6 +1172,7 @@ def employee_dashboard(request, profile):
         'my_sent_messages': my_sent_messages,
         'has_missing_punch_out': getattr(attendance, 'is_missing_punch_out', False),
         'has_missed_punch_in': (attendance.status == 'Missed Punch-In'),
+        'permission_balance': get_or_create_monthly_permission_balance(profile, today.year, today.month),
     }
     context.update(build_employee_calendar(profile, year, month))
     return render(request, 'dashboard/employee_dashboard.html', context)

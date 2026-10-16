@@ -925,17 +925,55 @@ body {
 }
 
 /* Calendar Color Coding Enhancements */
+.calendar-widget .working-day {
+  background: #16a34a !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border: 1px solid #15803d !important;
+}
+
 .calendar-widget .half-day {
   background: #f59e0b !important;
   color: #fff !important;
-  font-weight: 700;
+  font-weight: 700 !important;
+  border: 1px solid #d97706 !important;
 }
 
 .calendar-widget .permission-day {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 3px solid #f59e0b !important; /* Green background with distinct yellow border */
+  font-weight: 800 !important;
+  box-shadow: 0 0 0 1px #d97706, inset 0 0 4px rgba(245, 158, 11, 0.25) !important;
+}
+
+.calendar-widget .missed-punch-day {
+  background: #ef4444 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+.calendar-widget .sunday-holiday {
   background: #10b981 !important;
   color: #fff !important;
-  font-weight: 700;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+  font-weight: 700 !important;
+  border: 1px solid #059669 !important;
+}
+
+.calendar-widget .sunday-absent {
+  background: #ef4444 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border: 1px solid #dc2626 !important;
+}
+
+.calendar-widget .pre-joining-day {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border: 1px dashed #cbd5e1 !important;
+  font-weight: 500 !important;
+  cursor: not-allowed !important;
 }
 
 .badge-permission {

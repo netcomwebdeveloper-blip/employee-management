@@ -66,10 +66,40 @@ def calculate_payroll_for_employee(emp, year, month):
     for opl in OfficePaidLeave.objects.filter(date__year=year, date__month=month):
         paid_leave_days.add(opl.date.day)
 
-    # 2. Inspect attendances in this month
-    attendances = Attendance.objects.filter(
+    # Exclude attendances and absence evaluations prior to employee joining date
+    joining_date = getattr(emp, 'joining_date', None)
+    if joining_date:
+        earliest_att = Attendance.objects.filter(employee=emp).order_by('date').values_list('date', flat=True).first()
+        if earliest_att and earliest_att < joining_date:
+            joining_date = earliest_att
+
+    # 2. Inspect attendances in this month (strictly starting from joining date)
+    attendances_qs = Attendance.objects.filter(
         employee=emp, date__year=year, date__month=month
     )
+
+    if joining_date and joining_date > month_end and not attendances_qs.exists():
+        return {
+            'basic_salary': Decimal('0.00'),
+            'allowances': Decimal('0.00'),
+            'deductions': Decimal('0.00'),
+            'net_salary': Decimal('0.00'),
+            'remarks': f"Employee official joining date ({joining_date.strftime('%b %d, %Y')}) is after this billing period.",
+            'full_days': 0,
+            'half_days': 0,
+            'permission_days': 0,
+            'approved_leaves': 0,
+            'unpaid_leaves': 0,
+            'absent_days': 0,
+            'incomplete_punch_days': [],
+        }
+
+    pre_joining_days = 0
+    if joining_date and joining_date > month_start:
+        pre_joining_days = (joining_date - month_start).days
+
+    if joining_date:
+        attendances_qs = attendances_qs.filter(date__gte=joining_date)
 
     full_days = 0
     half_days = 0
@@ -79,8 +109,9 @@ def calculate_payroll_for_employee(emp, year, month):
     unpaid_leave_count = 0
     seen_attendance_days = set()
 
+    recorded_absent_days = set()
     incomplete_punch_days = []
-    for a in attendances:
+    for a in attendances_qs:
         d = a.date.day
         seen_attendance_days.add(d)
 
@@ -92,7 +123,7 @@ def calculate_payroll_for_employee(emp, year, month):
         # Incomplete attendance: punch-in is recorded but punch-out is missing
         if getattr(a, 'is_missing_punch_out', False) or (a.in_time and not a.out_time):
             incomplete_punch_days.append(d)
-            # Do NOT calculate or finalize that day's working hours or salary based on incomplete attendance data
+            recorded_absent_days.add(d)
             continue
 
         # If day is in leave and employee did not perform actual work
@@ -101,6 +132,7 @@ def calculate_payroll_for_employee(emp, year, month):
             continue
         elif d in unpaid_leave_days and (not a.in_time and a.total_work_minutes < 270):
             unpaid_leave_count += 1
+            recorded_absent_days.add(d)
             continue
 
         if a.status == 'Permission - 2 Hours' or a.is_permission:
@@ -109,6 +141,7 @@ def calculate_payroll_for_employee(emp, year, month):
         elif a.status in ('On Leave', 'Office Holiday') or a.leave_type == 'Paid Leave for the Office':
             if a.leave_type == 'Unpaid Leave' or a.status == 'Leave Without Pay (LWP)':
                 unpaid_leave_count += 1
+                recorded_absent_days.add(d)
             else:
                 paid_leave_count += 1
         elif a.status == 'Present' or a.total_work_minutes >= 540:
@@ -117,20 +150,38 @@ def calculate_payroll_for_employee(emp, year, month):
                 full_days += 1
             else:
                 incomplete_punch_days.append(d)
+                recorded_absent_days.add(d)
         elif a.status == 'Half Day' or (270 <= a.total_work_minutes < 540):
             # 4h 30m -> half working day, half-day salary (only if punch-out is present)
             if a.out_time:
                 half_days += 1
             else:
                 incomplete_punch_days.append(d)
+                recorded_absent_days.add(d)
         elif a.status in ('Absent', 'Missed Punch-In', 'Leave Without Pay (LWP)'):
             absent_days += 1
+            recorded_absent_days.add(d)
 
-    # Add any approved leaves that didn't have an Attendance record row yet
-    unlinked_paid = len(paid_leave_days - seen_attendance_days)
-    unlinked_unpaid = len(unpaid_leave_days - seen_attendance_days)
+    # Check Sunday sandwich continuous absence rule (up to 5 days continuous absence encompassing Sunday)
+    sandwich_sunday_count = 0
+    for day_num in range(1, days_in_month + 1):
+        cur_d = date(year, month, day_num)
+        if joining_date and cur_d < joining_date:
+            continue
+        if cur_d.weekday() == 6:  # Sunday
+            # Check continuous absence immediately preceding and succeeding
+            sat_absent = (day_num - 1) in recorded_absent_days
+            mon_absent = (day_num + 1) in recorded_absent_days
+            if sat_absent and mon_absent:
+                sandwich_sunday_count += 1
+
+    # Add any approved leaves that didn't have an Attendance record row yet (strictly after joining)
+    filtered_paid_leave_days = {d for d in paid_leave_days if not (joining_date and date(year, month, d) < joining_date)}
+    filtered_unpaid_leave_days = {d for d in unpaid_leave_days if not (joining_date and date(year, month, d) < joining_date)}
+    unlinked_paid = len(filtered_paid_leave_days - seen_attendance_days)
+    unlinked_unpaid = len(filtered_unpaid_leave_days - seen_attendance_days)
     total_paid_leaves = paid_leave_count + unlinked_paid
-    total_unpaid_leaves = unpaid_leave_count + unlinked_unpaid
+    total_unpaid_leaves = unpaid_leave_count + unlinked_unpaid + sandwich_sunday_count
 
     # Uncorrected missing punch-outs default to Leave Without Pay (LWP) per policy
     unique_incomplete_days = sorted(list(set(incomplete_punch_days)))
@@ -147,11 +198,15 @@ def calculate_payroll_for_employee(emp, year, month):
     remarks = (
         f"Attended: Full Days (9h+): {full_days}, "
         f"Half Days (4.5h+): {half_days} (-₹{half_day_deduction:.2f}), "
-        f"Permission (2h): {permission_days} (Full Pay), "
-        f"Paid Leaves & Office Holidays: {total_paid_leaves} (Full Pay), "
-        f"Unpaid Leaves / LWP: {total_unpaid_leaves} (-₹{unpaid_leave_deduction:.2f}), "
+        f"Permission (Up to 2h): {permission_days} (Full Pay), "
+        f"Paid Leaves, Sundays & Office Holidays: {total_paid_leaves} (Full Pay), "
+        f"Unpaid Leaves / Sandwich / LWP: {total_unpaid_leaves} (-₹{unpaid_leave_deduction:.2f}), "
         f"Absents/Missed Punch-In: {absent_days} (-₹{absent_deduction:.2f})."
     )
+    if pre_joining_days > 0:
+        remarks += f" [Pre-Joining Period: {pre_joining_days} day(s) prior to {joining_date.strftime('%b %d, %Y')} excluded from absenteeism and deductions]."
+    if sandwich_sunday_count > 0:
+        remarks += f" [Sandwich/Continuous Absence: {sandwich_sunday_count} Sunday(s) converted to LWP per policy]."
     if unique_incomplete_days:
         remarks += (
             f" [NOTICE: Incomplete attendance (missing punch-out) on day(s) {unique_incomplete_days}. "
