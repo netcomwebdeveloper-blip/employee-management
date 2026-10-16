@@ -97,14 +97,17 @@
       <span class="punch-stat-label">Official Document</span>
       {% if profile.document %}
       <span class="punch-stat-value" style="color: #059669; font-size: 13.5px; font-weight: 700;">Submitted ✅</span>
-      <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Confidential • HR & Admin view only</div>
+      <div style="font-size: 11px; margin-top: 3px; display: flex; gap: 8px; align-items: center;">
+        <a href="{{ profile.document.url }}" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: underline;">📄 View</a>
+        <span>&bull;</span>
+        <a href="#documentSubmissionSection" style="color: #475569; font-size: 11px;">Change</a>
+      </div>
       {% else %}
       <span class="punch-stat-value" style="color: #ea580c; font-size: 13px; font-weight: 600;">Not Uploaded</span>
-      <div style="font-size: 10.5px; color: #64748b; margin-top: 2px;">Submit anytime</div>
+      <div style="font-size: 11px; margin-top: 3px;">
+        <a href="#documentSubmissionSection" class="btn btn-primary btn-sm" style="padding: 2px 8px; font-size: 11px;">Upload Now</a>
+      </div>
       {% endif %}
-      <button type="button" onclick="document.getElementById('docSubmitModal').classList.add('active')" class="btn btn-outline btn-sm" style="margin-top: 4px; padding: 2px 8px; font-size: 11px;">
-        {% if profile.document %}Change Document{% else %}Submit Document{% endif %}
-      </button>
     </div>
   </div>
 </div>
@@ -469,6 +472,135 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Official Document & Profile Picture Submission Section -->
+<div class="panel" id="documentSubmissionSection" style="margin-top: 24px;">
+  <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h3 style="display: flex; align-items: center; gap: 8px;">
+        <span>📄</span> Official Documents & Profile Picture Submission
+      </h3>
+      <small style="color: var(--gray-600);">Upload, view, and update your required credentials, official documents, and profile picture at any time.</small>
+    </div>
+    <div>
+      {% if profile.document and profile.profile_picture %}
+      <span class="badge badge-success" style="font-size: 11.5px; padding: 4px 10px;">All Files Uploaded & Saved ✅</span>
+      {% elif profile.document or profile.profile_picture %}
+      <span class="badge badge-warning" style="font-size: 11.5px; padding: 4px 10px;">Partially Submitted ⚠️</span>
+      {% else %}
+      <span class="badge badge-danger" style="font-size: 11.5px; padding: 4px 10px;">Uploads Pending ⚠️</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      
+      <!-- Card 1: Profile Picture -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+              <span>🖼️</span> Profile Picture
+            </h4>
+            {% if profile.profile_picture %}
+            <span class="badge badge-success" style="font-size: 10.5px;">Active Photo</span>
+            {% else %}
+            <span class="badge badge-gray" style="font-size: 10.5px;">Not Uploaded</span>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 2.5px solid #3b82f6; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #1e40af; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              {% if profile.profile_picture %}
+              <img src="{{ profile.profile_picture.url }}" alt="{{ profile.display_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+              {% else %}
+              {{ request.user.username|make_list|first|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ profile.display_name }}</div>
+              <div style="font-size: 12px; color: #64748b; margin-top: 2px;">{{ profile.employee_code }} &bull; {{ profile.designation.title|default:"Staff" }}</div>
+              {% if profile.profile_picture %}
+              <div style="margin-top: 6px;">
+                <a href="{{ profile.profile_picture.url }}" target="_blank" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 11px; color: #2563eb; border-color: #3b82f6;">
+                  👁️ View Full Photo
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="submit_document">
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 600;">Upload / Change Profile Picture</label>
+            <input type="file" name="profile_picture" accept="image/*" class="form-input" style="font-size: 12px; padding: 6px 10px;" required>
+            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 3px;">Formats: JPG, PNG, WEBP (Saved to database)</small>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+            {% if profile.profile_picture %}Update Profile Picture{% else %}Upload Profile Picture{% endif %}
+          </button>
+        </form>
+      </div>
+
+      <!-- Card 2: Required Official Document -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+              <span>📄</span> Required Official Document
+            </h4>
+            {% if profile.document %}
+            <span class="badge badge-success" style="font-size: 10.5px;">Saved & Verified ✅</span>
+            {% else %}
+            <span class="badge badge-warning" style="font-size: 10.5px;">Pending Upload</span>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            {% if profile.document %}
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; word-break: break-all;">
+                  📎 {{ profile.document.name|slice:"19:"|default:profile.document.name }}
+                </div>
+                <div style="font-size: 11px; color: #059669; font-weight: 600; margin-top: 2px;">
+                  Status: Available and saved in database
+                </div>
+              </div>
+              <a href="{{ profile.document.url }}" target="_blank" class="btn btn-success btn-sm" style="padding: 4px 12px; font-size: 12px; white-space: nowrap;">
+                📄 View Document
+              </a>
+            </div>
+            {% else %}
+            <div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 8px;">
+              ⚠️ No official document submitted yet.<br/>
+              <small style="color: #94a3b8;">Please upload your ID proof, certificate, or resume.</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="submit_document">
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px; font-weight: 600;">Upload / Change Document File</label>
+            <input type="file" name="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="form-input" style="font-size: 12px; padding: 6px 10px;" required>
+            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 3px;">Formats: PDF, DOCX, JPG, PNG (Max 10MB)</small>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+            {% if profile.document %}Change / Re-upload Document{% else %}Submit Document{% endif %}
+          </button>
+        </form>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -873,12 +1005,12 @@
       <button type="button" class="btn btn-outline" style="color: #fff; border-color: rgba(255,255,255,0.4);" onclick="closeEmpImageModal()">Close Preview</button>
     </div>
   </div>
-<!-- Employee Document Submission / Change Modal -->
+<!-- Employee Document & Profile Picture Submission Modal -->
 <div class="modal-overlay" id="docSubmitModal" onclick="document.getElementById('docSubmitModal').classList.remove('active')">
   <div class="modal-card" style="max-width: 520px;" onclick="event.stopPropagation()">
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; margin-bottom: 16px;">
       <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--gray-900);">
-        📄 {% if profile.document %}Change Official Document{% else %}Submit Official Document{% endif %}
+        📄 Upload / Change Documents & Profile Photo
       </h3>
       <button type="button" class="btn btn-outline btn-sm" style="padding: 2px 8px; border-radius: 50%;" onclick="document.getElementById('docSubmitModal').classList.remove('active')">&times;</button>
     </div>
@@ -887,15 +1019,21 @@
       <input type="hidden" name="action" value="submit_document">
       <div>
         <p style="font-size: 13px; color: var(--gray-600); margin-bottom: 14px; line-height: 1.5;">
-          You can submit or change your official document (e.g. ID card, resume, credentials, or signed policy) at any time.
+          You can submit or change your official document and profile photo at any time. Uploaded files remain saved in the database across sessions.
         </p>
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 12px; color: #166534; line-height: 1.4;">
-          🔒 <b>Confidential Document Policy:</b> Uploaded documents are securely archived. To protect employee privacy, submitted documents are strictly viewable by HR Personnel and Administrators only.
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 600; font-size: 13px;">Official Document (PDF, DOCX, JPG, PNG)</label>
+          <input type="file" name="document" class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
+          {% if profile.document %}
+          <small style="color: #059669; font-size: 11px; display: block; margin-top: 3px;">Current: {{ profile.document.name|slice:"19:"|default:profile.document.name }}</small>
+          {% endif %}
         </div>
         <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label" style="font-weight: 600; font-size: 13px;">Choose Document File *</label>
-          <input type="file" name="document" required class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
-          <small style="color: var(--gray-500); font-size: 11px; display: block; margin-top: 4px;">Accepted file types: PDF, JPG, PNG, DOCX</small>
+          <label class="form-label" style="font-weight: 600; font-size: 13px;">Profile Picture (JPG, PNG, WEBP)</label>
+          <input type="file" name="profile_picture" accept="image/*" class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
+          {% if profile.profile_picture %}
+          <small style="color: #059669; font-size: 11px; display: block; margin-top: 3px;">Current: {{ profile.profile_picture.name }}</small>
+          {% endif %}
         </div>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--gray-200); padding-top: 14px; margin-top: 10px;">

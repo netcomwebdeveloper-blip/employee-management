@@ -718,6 +718,7 @@ class ComprehensiveSystemTests(TestCase):
         r_hr = self.client.get('/dashboard/hr/')
         self.assertEqual(r_hr.status_code, 200)
         self.assertContains(r_hr, 'punch-horizontal-bar')
+        self.assertContains(r_hr, 'Employee Reports & Data Export')
         self.assertContains(r_hr, 'Comprehensive HR Report Download')
         self.assertContains(r_hr, 'Employee Daily Work Planning')
         self.assertNotContains(r_hr, 'Biometric Machine Synchronization')

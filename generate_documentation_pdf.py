@@ -482,7 +482,7 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     story.append(Paragraph("• <b>Mandatory Joining Date Capture:</b> During employee creation (both frontend form and backend processing), an official Employee Joining Date is strictly required and stored securely in <code>Employee.joining_date</code>.", bullet_style))
     story.append(Paragraph("• <b>Strict Inactive Treatment for Prior Dates:</b> The system’s attendance engine, monthly calendar views, and payroll algorithms across Employee, HR, and Admin dashboards evaluate records starting strictly from the actual joining date. All dates prior to the official joining date are rendered as inactive/non-working days (<code>pre-joining-day</code>) and are never marked as absent, flagged as missed punches, or subjected to salary deductions.", bullet_style))
     story.append(Paragraph("• <b>Live Multi-Dashboard Synchronization:</b> HR and Admin can update an employee's joining date through their respective quick-edit modals or full profile editors, immediately refreshing the employee's calendar and payroll calculations.", bullet_style))
-    story.append(Paragraph("• <b>Official Document Submission & Confidentiality Governance:</b> Employees can submit or change their official document (ID proof, academic credential, certificate, or resume) at any time through their Profile Dossier or Employee Dashboard. To protect sensitive personal data, viewing and downloading documents is strictly restricted to HR Managers and Administrators; regular employees see a secure confirmation badge without view/download capabilities.", bullet_style))
+    story.append(Paragraph("• <b>Official Document & Profile Picture Submission:</b> Employees can submit, view, and update their required credentials (ID proofs, educational certificates, resumes) and personal profile photo at any time through their Employee Dashboard and Profile settings. Uploads persist permanently across logins and page refreshes, and direct preview/viewing links allow employees to verify their active files while HR/Admin retain full oversight.", bullet_style))
 
     story.append(Spacer(1, 14))
 
@@ -873,15 +873,21 @@ def build_documentation_pdf(filename="Netcom_Employee_Management_System_Document
     # =========================================================================
     # SECTION 15: REPORTING, EXPORTS, BACKUP & RESTORATION
     # =========================================================================
-    story.append(Paragraph("15. Reporting, Analytics, Excel & PDF Exports", h1_style))
+    story.append(Paragraph("15. Comprehensive Employee Reports & Data Export Hub", h1_style))
     story.append(Paragraph(
-        "The system includes an export engine supporting both formatted Excel spreadsheets (<code>.xlsx</code>) "
-        "and styled PDF reports (<code>.pdf</code>) for auditing, compliance, and accounting.",
+        "The system incorporates a corporate-grade reporting and export engine supporting single-employee dossiers "
+        "and company-wide workforce analytics. HR Managers can download records in styled PDF reports (<code>.pdf</code>), "
+        "formatted Excel spreadsheets (<code>.xlsx</code>), and bundled ZIP archives (<code>.zip</code>) containing actual submitted files.",
         body_style
     ))
-    story.append(Paragraph("Export Capabilities:", h2_style))
-    story.append(Paragraph("• <b>Excel Workforce Export:</b> Built with <code>openpyxl</code>. Generates multi-tab workbooks containing employee rosters, daily punch timestamps, GPS locations, leave history, and payroll registers.", bullet_style))
-    story.append(Paragraph("• <b>Corporate PDF Analytics:</b> Built with <code>reportlab</code>. Generates branded PDF reports featuring employee metrics, department presence percentages, and audit logs.", bullet_style))
+    story.append(Paragraph("Export Capabilities & Flexible Filtering:", h2_style))
+    story.append(Paragraph("• <b>Target Selection:</b> Choose a specific employee by ID or name for an individual dossier, or select 'All Employees' for corporate workforce analysis.", bullet_style))
+    story.append(Paragraph("• <b>Granular Category Filtering:</b> HR can export the Complete Dossier (all modules) or focus on specific operational areas: Attendance Records & Punch In/Out Times, Leave Balances & Requests, Daily Work Details & Accomplishments, Employee Profiles, or Submitted Documents & Profile Photos.", bullet_style))
+    story.append(Paragraph("• <b>Date Range Flexibility:</b> From-date to to-date filters allow custom historical auditing (e.g., monthly payroll cycle, quarterly audit, or yearly performance reviews).", bullet_style))
+    story.append(Paragraph("• <b>Multi-Format Delivery:</b>", bullet_style))
+    story.append(Paragraph("    - <b>Executive PDF Dossier:</b> Rendered via <code>reportlab</code> with official Netcom branding, employee details, embedded profile picture, KPI summaries, and structured tables.", bullet_style))
+    story.append(Paragraph("    - <b>Multi-Sheet Excel Workbook:</b> Built with <code>openpyxl</code> featuring styled headers, thin borders, formatted cells, and categorized sheets.", bullet_style))
+    story.append(Paragraph("    - <b>Complete ZIP Bundle:</b> Packages the PDF and Excel reports together with the <b>actual physical uploaded files</b> (submitted employee credentials, profile photos, and daily work activity images) along with an audit manifest.", bullet_style))
 
     story.append(PageBreak())
 

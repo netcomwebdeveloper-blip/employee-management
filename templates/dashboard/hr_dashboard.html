@@ -493,44 +493,83 @@
 
 <!-- Biometric Hardware Sync & Manual Attendance Correction -->
 <div class="grid-2">
-  <!-- Comprehensive HR Report Download -->
-  <div class="panel">
+  <!-- Comprehensive Employee Reports & Data Export Hub -->
+  <div class="panel" id="hrReportsExportPanel">
     <div class="panel-header">
       <div>
-        <h3>Comprehensive HR Report Download</h3>
-        <small style="color: var(--gray-600);">Export complete corporate HR analytics across all modules</small>
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <span>📊</span> Employee Reports & Data Export Hub
+        </h3>
+        <small style="color: var(--gray-600);">Comprehensive HR Report Download: individual employee dossiers or company-wide analytics in PDF, Excel, and ZIP bundles</small>
       </div>
-      <span class="badge badge-success">Excel & PDF</span>
+      <span class="badge badge-primary">PDF • Excel • ZIP</span>
     </div>
     <div class="panel-body">
       <p style="font-size: 13px; color: #475569; margin-bottom: 14px; line-height: 1.45;">
-        Export all workforce records, employee profiles, attendance histories, leave requests, leave balances, and daily work updates for your custom date range:
+        Export full employee records including personal & employment profiles, photos, submitted documents, punch in/out times, leave histories, and daily work updates:
       </p>
 
       <form method="GET" action="{% url 'reports:complete_export' %}" id="hrReportDownloadForm">
+        <!-- Employee Selector & Category Selector -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 600; font-size: 12.5px;" for="hrReportEmpSelect">
+              👤 Select Employee
+            </label>
+            <select name="employee_id" id="hrReportEmpSelect" class="form-input">
+              <option value="">-- All Employees (Company-Wide) --</option>
+              {% for emp in report_employees %}
+              <option value="{{ emp.id }}">{{ emp.employee_code }} - {{ emp.display_name }} ({{ emp.department.name|default:"General" }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-weight: 600; font-size: 12.5px;" for="hrReportCategorySelect">
+              📂 Report Category
+            </label>
+            <select name="category" id="hrReportCategorySelect" class="form-input">
+              <option value="complete">📑 Complete Dossier & All Records</option>
+              <option value="attendance">⏱️ Attendance Records & Punch In/Out Times</option>
+              <option value="leaves">🏖️ Leave Balances, Requests & Status</option>
+              <option value="daily_work">📝 Daily Work Details & Accomplishments</option>
+              <option value="profiles">👤 Employee Profiles & Employment Details</option>
+              <option value="documents">📁 Submitted Documents & Profile Photos</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Date Range Filter -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 600; font-size: 12.5px;">From Date</label>
+            <label class="form-label" style="font-weight: 600; font-size: 12.5px;" for="hrRptFromDate">
+              📅 From Date
+            </label>
             <input type="date" name="from_date" id="hrRptFromDate" value="{{ report_from_date }}" class="form-input" required>
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 600; font-size: 12.5px;">To Date</label>
+            <label class="form-label" style="font-weight: 600; font-size: 12.5px;" for="hrRptToDate">
+              📅 To Date
+            </label>
             <input type="date" name="to_date" id="hrRptToDate" value="{{ report_to_date }}" class="form-input" required>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button type="submit" name="format" value="excel" class="btn btn-success" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px;">
-            📊 Download Excel (.xlsx)
+        <!-- Format Export Actions -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px;">
+          <button type="submit" name="format" value="pdf" class="btn btn-danger" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; font-weight: 600;">
+            📕 Download PDF
           </button>
-          <button type="submit" name="format" value="pdf" class="btn btn-danger" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px;">
-            📑 Download PDF Report
+          <button type="submit" name="format" value="excel" class="btn btn-success" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; font-weight: 600;">
+            📗 Download Excel
+          </button>
+          <button type="submit" name="format" value="zip" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; font-weight: 600; background: #0284c7; border-color: #0284c7;">
+            📦 Download ZIP Bundle
           </button>
         </div>
       </form>
 
-      <div style="margin-top: 14px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11.5px; color: #64748b;">
-        🔒 Generated reports include official Netcom branding, employee details, leave balances, work updates, and verified attendance audits.
+      <div style="margin-top: 14px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; font-size: 12px; color: #0369a1; line-height: 1.45;">
+        💡 <strong>ZIP Bundle Export:</strong> Generates formatted PDF & Excel reports alongside the <strong>actual submitted documents, profile pictures, and work activity images</strong> packaged into a single downloadable ZIP archive.
       </div>
     </div>
   </div>

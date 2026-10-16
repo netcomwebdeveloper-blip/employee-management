@@ -465,23 +465,30 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertEqual(payroll_data['permission_days'], 1)
         self.assertEqual(payroll_data['absent_days'], 0)
 
-    def test_document_submission_and_privacy_restriction(self):
+    def test_document_submission_and_employee_view(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.login(username='emp_john', password='john12345')
 
-        # Employee uploads document from profile
+        # Employee uploads document and profile picture from profile
         test_file = SimpleUploadedFile("my_doc.pdf", b"sample resume data", content_type="application/pdf")
-        resp = self.client.post('/users/profile/', {'update_document': '1', 'document': test_file}, follow=True)
+        test_pic = SimpleUploadedFile("avatar.jpg", b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb\x00C\x00", content_type="image/jpeg")
+        resp = self.client.post('/users/profile/', {'update_document': '1', 'document': test_file, 'profile_picture': test_pic}, follow=True)
         self.assertEqual(resp.status_code, 200)
         self.emp_profile.refresh_from_db()
         self.assertTrue(self.emp_profile.document)
+        self.assertTrue(self.emp_profile.profile_picture)
 
-        # On Employee profile page, standard employee cannot see download link
+        # On Employee profile page, employee can view their submitted document and photo
         resp_profile = self.client.get('/users/profile/')
         self.assertEqual(resp_profile.status_code, 200)
-        self.assertContains(resp_profile, 'Document Submitted')
-        self.assertContains(resp_profile, 'Confidential')
-        self.assertNotContains(resp_profile, '📄 View Document')
+        self.assertContains(resp_profile, '📄 View Document')
+
+        # Employee Dashboard displays document and photo submission cards with view links
+        resp_dash_get = self.client.get('/dashboard/')
+        self.assertEqual(resp_dash_get.status_code, 200)
+        self.assertContains(resp_dash_get, 'documentSubmissionSection')
+        self.assertContains(resp_dash_get, '📄 View Document')
+        self.assertContains(resp_dash_get, 'Official Documents & Profile Picture Submission')
 
         # Employee can also update document from employee dashboard at any time
         new_file = SimpleUploadedFile("updated_doc.pdf", b"updated resume data", content_type="application/pdf")
@@ -492,10 +499,71 @@ class AttendanceAndMessagingTests(TestCase):
 
         self.client.logout()
 
-        # HR can view the document
+        # HR can view the document and details
         self.client.login(username='hr_user', password='hr12345')
         resp_hr = self.client.get(f'/employees/{self.emp_profile.id}/')
         self.assertEqual(resp_hr.status_code, 200)
         self.assertContains(resp_hr, 'View Submitted Document')
+
+    def test_hr_employee_report_export_pdf_excel_zip(self):
+        import zipfile
+        import io
+        self.client.login(username='hr_user', password='hr12345')
+
+        # 1. Export Excel for specific employee
+        resp_excel = self.client.get('/reports/complete-export/', {
+            'employee_id': self.emp_profile.id,
+            'category': 'complete',
+            'from_date': '2026-10-01',
+            'to_date': '2026-10-31',
+            'format': 'excel'
+        })
+        self.assertEqual(resp_excel.status_code, 200)
+        self.assertIn('spreadsheetml.sheet', resp_excel['Content-Type'])
+        self.assertIn('attachment', resp_excel['Content-Disposition'])
+
+        # 2. Export PDF for specific employee
+        resp_pdf = self.client.get('/reports/complete-export/', {
+            'employee_id': self.emp_profile.id,
+            'category': 'attendance',
+            'from_date': '2026-10-01',
+            'to_date': '2026-10-31',
+            'format': 'pdf'
+        })
+        self.assertEqual(resp_pdf.status_code, 200)
+        self.assertEqual(resp_pdf['Content-Type'], 'application/pdf')
+        self.assertTrue(resp_pdf.content.startswith(b'%PDF'))
+
+        # 3. Export ZIP bundle for specific employee (contains PDF, Excel, and README/attachments)
+        resp_zip = self.client.get('/reports/complete-export/', {
+            'employee_id': self.emp_profile.id,
+            'category': 'complete',
+            'from_date': '2026-10-01',
+            'to_date': '2026-10-31',
+            'format': 'zip'
+        })
+        self.assertEqual(resp_zip.status_code, 200)
+        self.assertEqual(resp_zip['Content-Type'], 'application/zip')
+
+        # Verify ZIP contains expected files
+        zip_buffer = io.BytesIO(resp_zip.content)
+        with zipfile.ZipFile(zip_buffer, 'r') as zf:
+            namelist = zf.namelist()
+            self.assertTrue(any('README_Manifest.txt' in name for name in namelist))
+            self.assertTrue(any(name.endswith('.pdf') for name in namelist))
+            self.assertTrue(any(name.endswith('.xlsx') for name in namelist))
+
+        # 4. Export all employees company-wide in Excel and PDF
+        resp_all_excel = self.client.get('/reports/complete-export/', {
+            'category': 'daily_work',
+            'from_date': '2026-10-01',
+            'to_date': '2026-10-31',
+            'format': 'excel'
+        })
+        self.assertEqual(resp_all_excel.status_code, 200)
+        self.assertIn('spreadsheetml.sheet', resp_all_excel['Content-Type'])
+
+        self.client.logout()
+
 
 

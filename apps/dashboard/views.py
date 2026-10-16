@@ -1097,6 +1097,7 @@ def hr_dashboard(request, profile):
         'missing_punch_out_attendances': Attendance.objects.filter(in_time__isnull=False, out_time__isnull=True).select_related('employee', 'employee__user', 'employee__department').order_by('-date')[:25],
         'hr_notifications': HRNotification.objects.filter(is_read=False)[:10],
         'employee_messages': employee_messages,
+        'report_employees': Employee.objects.select_related('user', 'department', 'designation').all().order_by('employee_code'),
         'permission_balance': get_or_create_monthly_permission_balance(profile, today.year, today.month),
         'calendar_permission_balance': get_or_create_monthly_permission_balance(calendar_employee, calendar_context['current_year'], calendar_context['current_month']),
     }
@@ -1133,15 +1134,23 @@ def employee_dashboard(request, profile):
             messages.success(request, "Your message has been sent directly to the HR department. HR will review and address your enquiry.")
         return redirect('dashboard:index')
 
-    # Handle Employee "Submit / Change Document" (at any time)
+    # Handle Employee "Submit / Change Document & Profile Picture" (at any time)
     if request.method == 'POST' and request.POST.get('action') == 'submit_document':
         doc_file = request.FILES.get('document')
+        pic_file = request.FILES.get('profile_picture')
+        updated = False
         if doc_file:
             profile.document = doc_file
-            profile.save(update_fields=['document'])
-            messages.success(request, "Your document was successfully submitted/updated! Only HR and Administrators are authorized to view it.")
+            updated = True
+        if pic_file:
+            profile.profile_picture = pic_file
+            updated = True
+
+        if updated:
+            profile.save()
+            messages.success(request, "Your required document and/or profile picture have been successfully uploaded and saved!")
         else:
-            messages.error(request, "Please select a valid document file to upload.")
+            messages.error(request, "Please select a valid document or profile picture to upload.")
         return redirect('dashboard:index')
 
     year = request.GET.get('year')

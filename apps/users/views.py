@@ -72,23 +72,30 @@ def user_profile_view(request):
                     for err in err_list:
                         messages.error(request, err)
 
-        if 'update_document' in request.POST or 'document' in request.FILES:
+        if 'update_document' in request.POST or 'document' in request.FILES or 'profile_picture' in request.FILES:
             doc_file = request.FILES.get('document')
-            if doc_file:
-                if not profile:
-                    try:
-                        from apps.employees.models import Employee
-                        profile = Employee.objects.get(user=request.user)
-                    except Exception:
-                        profile = None
-                if profile:
+            pic_file = request.FILES.get('profile_picture')
+            if not profile:
+                try:
+                    from apps.employees.models import Employee
+                    profile = Employee.objects.get(user=request.user)
+                except Exception:
+                    profile = None
+            if profile:
+                updated = False
+                if doc_file:
                     profile.document = doc_file
-                    profile.save(update_fields=['document'])
-                    messages.success(request, 'Your document was successfully submitted/updated! Only HR and Administrators are authorized to view it.')
+                    updated = True
+                if pic_file:
+                    profile.profile_picture = pic_file
+                    updated = True
+                if updated:
+                    profile.save()
+                    messages.success(request, 'Your document and/or profile picture has been successfully updated and saved!')
                     return redirect('users:profile')
-            else:
-                messages.error(request, 'Please select a valid document file to upload.')
-                return redirect('users:profile')
+                else:
+                    messages.error(request, 'Please select a valid document or image file to upload.')
+                    return redirect('users:profile')
 
     return render(request, 'users/profile.html', {
         'profile': profile,
