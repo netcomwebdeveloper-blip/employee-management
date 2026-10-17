@@ -469,41 +469,69 @@ class AttendanceAndMessagingTests(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.login(username='emp_john', password='john12345')
 
-        # Employee uploads document and profile picture from profile
+        # 1. Employee CANNOT upload document or profile picture from /users/profile/
         test_file = SimpleUploadedFile("my_doc.pdf", b"sample resume data", content_type="application/pdf")
         test_pic = SimpleUploadedFile("avatar.jpg", b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00`\x00`\x00\x00\xff\xdb\x00C\x00", content_type="image/jpeg")
         resp = self.client.post('/users/profile/', {'update_document': '1', 'document': test_file, 'profile_picture': test_pic}, follow=True)
         self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Permission denied")
         self.emp_profile.refresh_from_db()
-        self.assertTrue(self.emp_profile.document)
-        self.assertTrue(self.emp_profile.profile_picture)
+        self.assertFalse(bool(self.emp_profile.document))
+        self.assertFalse(bool(self.emp_profile.profile_picture))
 
-        # On Employee profile page, employee can view their submitted document and photo
-        resp_profile = self.client.get('/users/profile/')
-        self.assertEqual(resp_profile.status_code, 200)
-        self.assertContains(resp_profile, '📄 View Document')
+        # 2. Employee CANNOT upload document from employee dashboard
+        resp_dash_attempt = self.client.post('/dashboard/', {'action': 'submit_document', 'document': test_file}, follow=True)
+        self.assertEqual(resp_dash_attempt.status_code, 200)
+        self.assertContains(resp_dash_attempt, "Permission denied")
+        self.emp_profile.refresh_from_db()
+        self.assertFalse(bool(self.emp_profile.document))
 
-        # Employee Dashboard displays document and photo submission cards with view links
+        # 3. Employee Dashboard has NO file upload inputs for employees
         resp_dash_get = self.client.get('/dashboard/')
         self.assertEqual(resp_dash_get.status_code, 200)
         self.assertContains(resp_dash_get, 'documentSubmissionSection')
-        self.assertContains(resp_dash_get, '📄 View Document')
-        self.assertContains(resp_dash_get, 'Official Documents & Profile Picture Submission')
-
-        # Employee can also update document from employee dashboard at any time
-        new_file = SimpleUploadedFile("updated_doc.pdf", b"updated resume data", content_type="application/pdf")
-        resp_dash = self.client.post('/dashboard/', {'action': 'submit_document', 'document': new_file}, follow=True)
-        self.assertEqual(resp_dash.status_code, 200)
-        self.emp_profile.refresh_from_db()
-        self.assertIn("updated_doc", self.emp_profile.document.name)
+        self.assertNotContains(resp_dash_get, '<input type="file" name="document"')
+        self.assertNotContains(resp_dash_get, '<input type="file" name="profile_picture"')
 
         self.client.logout()
 
-        # HR can view the document and details
+        # 4. HR logs in and CAN upload document and profile picture for the employee
         self.client.login(username='hr_user', password='hr12345')
+        resp_hr_edit = self.client.post('/dashboard/', {
+            'action': 'update_employee_details',
+            'employee_id': self.emp_profile.id,
+            'first_name': 'John',
+            'last_name': 'Doe',
+            'email': 'john@example.com',
+            'phone': '9876543210',
+            'role': 'EMPLOYEE',
+            'casual_leave_balance': 5,
+            'document': test_file,
+            'profile_picture': test_pic,
+        }, follow=True)
+        self.assertEqual(resp_hr_edit.status_code, 200)
+        self.emp_profile.refresh_from_db()
+        self.assertTrue(bool(self.emp_profile.document))
+        self.assertTrue(bool(self.emp_profile.profile_picture))
+
+        # HR can view the uploaded document in dossier
         resp_hr = self.client.get(f'/employees/{self.emp_profile.id}/')
         self.assertEqual(resp_hr.status_code, 200)
         self.assertContains(resp_hr, 'View Submitted Document')
+        self.client.logout()
+
+        # 5. Employee logs in and can VIEW their document and profile picture (without upload forms)
+        self.client.login(username='emp_john', password='john12345')
+        resp_emp_dash = self.client.get('/dashboard/')
+        self.assertEqual(resp_emp_dash.status_code, 200)
+        self.assertContains(resp_emp_dash, 'View Document')
+        self.assertNotContains(resp_emp_dash, 'name="document"')
+        self.assertNotContains(resp_emp_dash, 'name="profile_picture"')
+
+        resp_profile = self.client.get('/users/profile/')
+        self.assertEqual(resp_profile.status_code, 200)
+        self.assertContains(resp_profile, 'View Document')
+        self.assertNotContains(resp_profile, '<input type="file"')
 
     def test_hr_employee_report_export_pdf_excel_zip(self):
         import zipfile

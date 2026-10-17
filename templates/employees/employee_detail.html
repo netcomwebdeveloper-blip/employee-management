@@ -3,8 +3,12 @@
 
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
   <a href="{% url 'employees:list' %}" class="btn btn-outline btn-sm">← Back to Registry</a>
   <a href="{% url 'employees:edit' employee.id %}" class="btn btn-primary btn-sm">✏️ Edit Profile</a>
+  {% else %}
+  <a href="{% url 'dashboard:index' %}" class="btn btn-outline btn-sm">← Back to Dashboard</a>
+  {% endif %}
 </div>
 
 <div class="grid-2">

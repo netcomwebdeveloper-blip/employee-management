@@ -475,22 +475,22 @@
   </div>
 </div>
 
-<!-- Official Document & Profile Picture Submission Section -->
+<!-- Official Document & Profile Picture Section (Read-Only for Employees; Upload Managed Exclusively by HR and Admin) -->
 <div class="panel" id="documentSubmissionSection" style="margin-top: 24px;">
   <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
     <div>
       <h3 style="display: flex; align-items: center; gap: 8px;">
-        <span>📄</span> Official Documents & Profile Picture Submission
+        <span>📄</span> Official Documents & Profile Picture
       </h3>
-      <small style="color: var(--gray-600);">Upload, view, and update your required credentials, official documents, and profile picture at any time.</small>
+      <small style="color: var(--gray-600);">Official employee credentials, identity documents, and profile photo managed by HR and Administration.</small>
     </div>
     <div>
       {% if profile.document and profile.profile_picture %}
-      <span class="badge badge-success" style="font-size: 11.5px; padding: 4px 10px;">All Files Uploaded & Saved ✅</span>
+      <span class="badge badge-success" style="font-size: 11.5px; padding: 4px 10px;">All Files Verified & Active ✅</span>
       {% elif profile.document or profile.profile_picture %}
-      <span class="badge badge-warning" style="font-size: 11.5px; padding: 4px 10px;">Partially Submitted ⚠️</span>
+      <span class="badge badge-warning" style="font-size: 11.5px; padding: 4px 10px;">Partially Registered ⚠️</span>
       {% else %}
-      <span class="badge badge-danger" style="font-size: 11.5px; padding: 4px 10px;">Uploads Pending ⚠️</span>
+      <span class="badge badge-gray" style="font-size: 11.5px; padding: 4px 10px;">Pending HR Upload</span>
       {% endif %}
     </div>
   </div>
@@ -534,18 +534,11 @@
           </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="submit_document">
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label class="form-label" style="font-size: 12px; font-weight: 600;">Upload / Change Profile Picture</label>
-            <input type="file" name="profile_picture" accept="image/*" class="form-input" style="font-size: 12px; padding: 6px 10px;" required>
-            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 3px;">Formats: JPG, PNG, WEBP (Saved to database)</small>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
-            {% if profile.profile_picture %}Update Profile Picture{% else %}Upload Profile Picture{% endif %}
-          </button>
-        </form>
+        <div style="padding: 10px 12px; background: #f1f5f9; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 11.5px; display: block; line-height: 1.4;">
+            ℹ️ Profile pictures are uploaded and managed exclusively by HR and Admin. If you need to update your picture, contact HR.
+          </small>
+        </div>
       </div>
 
       <!-- Card 2: Required Official Document -->
@@ -553,12 +546,12 @@
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-              <span>📄</span> Required Official Document
+              <span>📄</span> Submitted Official Document
             </h4>
             {% if profile.document %}
             <span class="badge badge-success" style="font-size: 10.5px;">Saved & Verified ✅</span>
             {% else %}
-            <span class="badge badge-warning" style="font-size: 10.5px;">Pending Upload</span>
+            <span class="badge badge-warning" style="font-size: 10.5px;">Pending HR Upload</span>
             {% endif %}
           </div>
 
@@ -579,25 +572,18 @@
             </div>
             {% else %}
             <div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 8px;">
-              ⚠️ No official document submitted yet.<br/>
-              <small style="color: #94a3b8;">Please upload your ID proof, certificate, or resume.</small>
+              ⚠️ No official document uploaded yet.<br/>
+              <small style="color: #94a3b8;">Official documents are uploaded and maintained exclusively by HR and Admin.</small>
             </div>
             {% endif %}
           </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="submit_document">
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label class="form-label" style="font-size: 12px; font-weight: 600;">Upload / Change Document File</label>
-            <input type="file" name="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="form-input" style="font-size: 12px; padding: 6px 10px;" required>
-            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 3px;">Formats: PDF, DOCX, JPG, PNG (Max 10MB)</small>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
-            {% if profile.document %}Change / Re-upload Document{% else %}Submit Document{% endif %}
-          </button>
-        </form>
+        <div style="padding: 10px 12px; background: #f1f5f9; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 11.5px; display: block; line-height: 1.4;">
+            ℹ️ Official documents are uploaded and maintained exclusively by HR and Admin.
+          </small>
+        </div>
       </div>
 
     </div>
@@ -1001,46 +987,7 @@
 <div class="modal-overlay" id="empWorkImageModal" onclick="closeEmpImageModal()">
   <div class="modal-card" style="max-width: 760px; background: transparent; box-shadow: none; border: none; text-align: center;" onclick="event.stopPropagation()">
     <img id="empWorkModalImg" src="" alt="Work Photo" style="max-width: 100%; max-height: 82vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-    <div style="margin-top: 12px;">
-      <button type="button" class="btn btn-outline" style="color: #fff; border-color: rgba(255,255,255,0.4);" onclick="closeEmpImageModal()">Close Preview</button>
     </div>
-  </div>
-<!-- Employee Document & Profile Picture Submission Modal -->
-<div class="modal-overlay" id="docSubmitModal" onclick="document.getElementById('docSubmitModal').classList.remove('active')">
-  <div class="modal-card" style="max-width: 520px;" onclick="event.stopPropagation()">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; margin-bottom: 16px;">
-      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--gray-900);">
-        📄 Upload / Change Documents & Profile Photo
-      </h3>
-      <button type="button" class="btn btn-outline btn-sm" style="padding: 2px 8px; border-radius: 50%;" onclick="document.getElementById('docSubmitModal').classList.remove('active')">&times;</button>
-    </div>
-    <form method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="submit_document">
-      <div>
-        <p style="font-size: 13px; color: var(--gray-600); margin-bottom: 14px; line-height: 1.5;">
-          You can submit or change your official document and profile photo at any time. Uploaded files remain saved in the database across sessions.
-        </p>
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="form-label" style="font-weight: 600; font-size: 13px;">Official Document (PDF, DOCX, JPG, PNG)</label>
-          <input type="file" name="document" class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
-          {% if profile.document %}
-          <small style="color: #059669; font-size: 11px; display: block; margin-top: 3px;">Current: {{ profile.document.name|slice:"19:"|default:profile.document.name }}</small>
-          {% endif %}
-        </div>
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label" style="font-weight: 600; font-size: 13px;">Profile Picture (JPG, PNG, WEBP)</label>
-          <input type="file" name="profile_picture" accept="image/*" class="form-control" style="width: 100%; padding: 8px 12px; font-size: 13px;">
-          {% if profile.profile_picture %}
-          <small style="color: #059669; font-size: 11px; display: block; margin-top: 3px;">Current: {{ profile.profile_picture.name }}</small>
-          {% endif %}
-        </div>
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--gray-200); padding-top: 14px; margin-top: 10px;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('docSubmitModal').classList.remove('active')">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm">Upload & Save</button>
-      </div>
-    </form>
   </div>
 </div>
 {% endblock %}

@@ -1134,8 +1134,14 @@ def employee_dashboard(request, profile):
             messages.success(request, "Your message has been sent directly to the HR department. HR will review and address your enquiry.")
         return redirect('dashboard:index')
 
-    # Handle Employee "Submit / Change Document & Profile Picture" (at any time)
+    # Handle Employee "Submit / Change Document & Profile Picture"
+    # Employees are not allowed to upload documents or profile pictures; only HR and Admin can upload.
     if request.method == 'POST' and request.POST.get('action') == 'submit_document':
+        is_hr_or_admin = request.user.is_superuser or (profile and profile.role in ('ADMIN', 'HR'))
+        if not is_hr_or_admin:
+            messages.error(request, "Permission denied: Employees cannot upload documents or profile pictures. Only HR and Admin are authorized to upload employee documents and profile pictures.")
+            return redirect('dashboard:index')
+
         doc_file = request.FILES.get('document')
         pic_file = request.FILES.get('profile_picture')
         updated = False

@@ -44,12 +44,13 @@
         </tr>
       </table>
 
+      {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
       <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
         <h4 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 600; color: #1e293b;">
           📄 Upload / Change Documents & Profile Photo
         </h4>
         <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
-          You can submit or change your official document and profile picture at any time. Uploads are saved securely and remain available across sessions.
+          Admin and HR staff can update official documents and profile pictures directly.
         </p>
         <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
           {% csrf_token %}
@@ -69,6 +70,13 @@
           </div>
         </form>
       </div>
+      {% else %}
+      <div style="margin-top: 24px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.5;">
+          ℹ️ <b>Document & Profile Picture Policy:</b> Profile pictures and official documents are uploaded and managed exclusively by HR and Administrator. To update your profile photo or submit official documents, please contact HR or send an enquiry via your Employee Dashboard.
+        </p>
+      </div>
+      {% endif %}
     </div>
   </div>
 

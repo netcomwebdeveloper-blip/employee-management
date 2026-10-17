@@ -73,6 +73,10 @@ def user_profile_view(request):
                         messages.error(request, err)
 
         if 'update_document' in request.POST or 'document' in request.FILES or 'profile_picture' in request.FILES:
+            is_hr_or_admin = request.user.is_superuser or (profile and profile.role in ('ADMIN', 'HR'))
+            if not is_hr_or_admin:
+                messages.error(request, 'Permission denied: Employees cannot upload documents or profile pictures. Only HR and Admin are authorized to upload employee documents and profile pictures.')
+                return redirect('users:profile')
             doc_file = request.FILES.get('document')
             pic_file = request.FILES.get('profile_picture')
             if not profile:
