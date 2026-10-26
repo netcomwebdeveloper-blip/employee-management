@@ -54,4 +54,4 @@ class Employee(models.Model):
             pb = get_or_create_monthly_permission_balance(self)
             return pb.remaining_formatted()
         except Exception:
-            return "2h 00m"
+            return "4h"

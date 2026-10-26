@@ -104,7 +104,7 @@ class MonthlyPermissionBalance(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='permission_balances')
     year = models.IntegerField()
     month = models.IntegerField()
-    total_hours_allowed = models.DecimalField(max_digits=4, decimal_places=2, default=1.0 * 5.0, help_text="Total permission hours allowed per month (Default 5.00 hours)")
+    total_hours_allowed = models.DecimalField(max_digits=4, decimal_places=2, default=4.0, help_text="Total permission hours allowed per month (Default 4.00 hours)")
     used_hours = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, help_text="Approved permission hours used in this month")
     total_requests_allowed = models.PositiveIntegerField(default=2, help_text="Maximum permission requests allowed per month (Default 2)")
     used_requests_count = models.PositiveIntegerField(default=0, help_text="Number of approved permission requests in this month")

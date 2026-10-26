@@ -340,7 +340,7 @@
     const [fh, fm] = fromTime.split(':').map(Number);
     const [th, tm] = toTime.split(':').map(Number);
     const diffMins = (th * 60 + tm) - (fh * 60 + fm);
-    const remainingHours = {{ permission_balance.remaining_hours|default:5.00 }};
+    const remainingHours = {{ permission_balance.remaining_hours|default:4.00 }};
 
     if (diffMins <= 0) {
       if (notice) {

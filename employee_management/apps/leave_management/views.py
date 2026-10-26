@@ -14,7 +14,7 @@ from .forms import LeaveRequestForm
 def get_or_create_monthly_permission_balance(employee, year=None, month=None):
     """
     Retrieves or initializes the monthly permission balance for an employee.
-    Each employee receives a maximum of 5.00 hours and 2 requests per calendar month.
+    Each employee receives a maximum of 4.00 hours and 2 requests per calendar month.
     Resets at the start of each month.
     """
     if not employee:
@@ -28,12 +28,16 @@ def get_or_create_monthly_permission_balance(employee, year=None, month=None):
         year=y,
         month=m,
         defaults={
-            'total_hours_allowed': Decimal('5.00'),
+            'total_hours_allowed': Decimal('4.00'),
             'used_hours': Decimal('0.00'),
             'total_requests_allowed': 2,
             'used_requests_count': 0
         }
     )
+    # Ensure monthly allowance is capped at 4.00 hours if previously created with 5.00 hours
+    if balance.total_hours_allowed == Decimal('5.00'):
+        balance.total_hours_allowed = Decimal('4.00')
+        balance.save(update_fields=['total_hours_allowed'])
     return balance
 
 def refresh_all_active_employees_monthly_permission():

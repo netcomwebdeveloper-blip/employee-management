@@ -1358,10 +1358,10 @@ body {
 
 .punch-card-box-modern {
   background: #ffffff;
-  border-radius: 14px;
-  padding: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 28px;
+  padding: 18px 22px;
+  border: 1.5px solid #edf2f7;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1370,28 +1370,29 @@ body {
 
 .punch-card-box-modern:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .punch-card-top-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 10px;
 }
 
 .punch-card-label {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   color: #64748b;
+  margin-bottom: 2px;
 }
 
 .punch-icon-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1404,31 +1405,32 @@ body {
 }
 
 .icon-circle-salmon {
-  background: #ffe4e6;
-  color: #e11d48;
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 .icon-circle-purple {
-  background: #f3e8ff;
-  color: #7c3aed;
+  background: #ede9fe;
+  color: #8b5cf6;
 }
 
 .icon-circle-blue {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #dbeafe;
+  color: #3b82f6;
 }
 
 .punch-card-main-val {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 700;
   color: #0f172a;
   line-height: 1.2;
-  margin-bottom: 6px;
 }
 
 .punch-card-subtext {
   font-size: 12px;
+  font-weight: 500;
   color: #64748b;
+  text-align: center;
   line-height: 1.4;
 }
 
