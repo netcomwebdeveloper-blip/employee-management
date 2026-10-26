@@ -1203,3 +1203,48 @@ def employee_dashboard(request, profile):
     context.update(build_employee_calendar(profile, year, month))
     return render(request, 'dashboard/employee_dashboard.html', context)
 
+
+
+
+@login_required
+def hr_support_view(request):
+    profile = getattr(request.user, 'employee_profile', None)
+    if not profile:
+        profile = Employee.objects.filter(user=request.user).first()
+
+    if request.method == 'POST':
+        category = request.POST.get('category', 'General Enquiry').strip()
+        subject = request.POST.get('subject', '').strip()
+        msg_body = request.POST.get('message', '').strip()
+
+        if not subject or not msg_body:
+            messages.error(request, "Please enter both a Subject and Message.")
+        else:
+            emp_display = profile.display_name() if profile else (request.user.get_full_name() or request.user.username)
+            emp_code = profile.employee_code if profile else 'STAFF'
+            dept_name = profile.department.name if profile and profile.department else 'General'
+
+            HRNotification.objects.create(
+                recipient_role='HR',
+                title=f"[{category}] {subject} - {emp_display} ({emp_code})",
+                message=(
+                    f"Category: {category}\n"
+                    f"Subject: {subject}\n"
+                    f"From Employee: {emp_display} ({emp_code})\n"
+                    f"Department: {dept_name}\n"
+                    f"Date: {timezone.localtime().strftime('%Y-%m-%d %I:%M %p')}\n\n"
+                    f"Enquiry / Work-Related Concern:\n{msg_body}"
+                ),
+                is_read=False
+            )
+            messages.success(request, "Your message has been sent directly to the HR department. HR will review and address your enquiry.")
+            return redirect('dashboard:hr_support')
+
+    emp_code = profile.employee_code if profile else request.user.username
+    my_sent_messages = HRNotification.objects.filter(message__contains=emp_code).order_by('-created_at')[:30]
+
+    context = {
+        'profile': profile,
+        'my_sent_messages': my_sent_messages,
+    }
+    return render(request, 'dashboard/hr_support.html', context)

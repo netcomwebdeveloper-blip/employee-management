@@ -8,4 +8,6 @@ urlpatterns = [
     path('admin/', views.admin_dashboard_view, name='admin_dashboard'),
     path('hr/', views.hr_dashboard_view, name='hr_dashboard'),
     path('employee/', views.employee_dashboard_view, name='employee_dashboard'),
+    path('hr-support/', views.hr_support_view, name='hr_support'),
+    path('connect-hr/', views.hr_support_view, name='connect_hr'),
 ]
