@@ -15,12 +15,27 @@
   <span style="color: #0f172a; font-weight: 600;">HR Support</span>
 </div>
 
-<!-- Modern Hero Banner (Matching Image Model) -->
-<div class="employee-hero-banner hero-banner-support" style="margin-bottom: 24px; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; background: #ffffff;">
-  <img src="{% static 'images/banners/hr_support_banner.png' %}" alt="HR Support Banner" style="width: 100%; height: auto; display: block; border-radius: 20px;">
-  <div class="visually-hidden" style="display: none;" aria-hidden="true">
-    <h2>HR Support</h2>
-    <p>We're here to help with your work-related questions, concerns and requests.</p>
+<!-- Modern Hero Banner (Background Image + Content on Top) -->
+<div class="employee-hero-banner hero-banner-support" style="position: relative; margin-bottom: 24px; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 22px rgba(0, 0, 0, 0.04); border: 1.5px solid #edf2f7; background: #e0f2fe url('{% static 'images/banners/hr_support_bg.png' %}') no-repeat right center; background-size: cover; min-height: 180px; padding: 26px 32px; display: flex; align-items: center; justify-content: space-between;">
+  <div class="hero-left-content" style="max-width: 580px; z-index: 2;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 54px; height: 54px; border-radius: 16px; background: #2563eb; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3); flex-shrink: 0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          <circle cx="9" cy="10" r="1" fill="#ffffff"></circle>
+          <circle cx="12" cy="10" r="1" fill="#ffffff"></circle>
+          <circle cx="15" cy="10" r="1" fill="#ffffff"></circle>
+        </svg>
+      </div>
+      <div>
+        <h2 style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; line-height: 1.2;">
+          HR <span style="color: #2563eb;">Support</span>
+        </h2>
+        <p style="font-size: 14px; color: #475569; margin: 0; line-height: 1.5;">
+          We're here to help with your work-related questions, concerns and requests.
+        </p>
+      </div>
+    </div>
   </div>
 </div>
 

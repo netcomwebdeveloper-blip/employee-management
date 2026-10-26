@@ -1,103 +1,332 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block page_title %}My Profile & Account Settings{% endblock %}
 
 {% block content %}
-<div class="grid-2">
-  <div class="panel">
-    <div class="panel-header">
-      <h3>Employee Dossier</h3>
-      <span class="badge badge-primary">{{ profile.role }}</span>
-    </div>
-    <div class="panel-body">
-      <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 24px;">
-        <div class="user-avatar" style="width: 64px; height: 64px; font-size: 26px; overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-          {% if profile.profile_picture %}
-          <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" style="width: 100%; height: 100%; object-fit: cover;">
-          {% else %}
-          {{ request.user.username|make_list|first|upper }}
-          {% endif %}
-        </div>
-        <div>
-          <h2 style="font-size: 20px; color: var(--gray-900);">{{ request.user.get_full_name|default:request.user.username }}</h2>
-          <p style="color: var(--gray-600); font-size: 14px;">{{ profile.designation.title|default:"Staff" }} • {{ profile.department.name|default:"General" }}</p>
-          <span style="font-size: 13px; color: var(--primary); font-weight: 600;">Code: {{ profile.employee_code }}</span>
-        </div>
-      </div>
-
-      <table class="data-table">
-        <tr><th>Email</th><td>{{ request.user.email|default:"Not specified" }}</td></tr>
-        <tr><th>Phone</th><td>{{ profile.phone|default:"Not specified" }}</td></tr>
-        <tr><th>Joining Date</th><td>{{ profile.joining_date }}</td></tr>
-        <tr><th>Casual Leave Balance</th><td><b>{{ profile.casual_leave_balance }} Days</b></td></tr>
-        <tr><th>Address</th><td>{{ profile.address|default:"Not specified" }}</td></tr>
-        <tr>
-          <th>Submitted Document</th>
-          <td>
-            {% if profile.document %}
-            <a href="{{ profile.document.url }}" target="_blank" class="btn btn-outline btn-sm" style="color: #2563eb; border-color: #3b82f6;">
-              📄 View Document
-            </a>
-            {% else %}
-            <span style="color: #94a3b8; font-size: 12px;">No document uploaded</span>
-            {% endif %}
-          </td>
-        </tr>
-      </table>
-
-      {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
-      <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
-        <h4 style="margin: 0 0 6px 0; font-size: 13.5px; font-weight: 600; color: #1e293b;">
-          📄 Upload / Change Documents & Profile Photo
-        </h4>
-        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">
-          Admin and HR staff can update official documents and profile pictures directly.
-        </p>
-        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 12px;">
-          {% csrf_token %}
-          <input type="hidden" name="update_document" value="1">
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <label style="font-size: 12px; font-weight: 600; min-width: 110px;">Official Document:</label>
-            <input type="file" name="document" class="form-control" style="font-size: 12px; max-width: 280px; padding: 6px 10px;">
-          </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <label style="font-size: 12px; font-weight: 600; min-width: 110px;">Profile Picture:</label>
-            <input type="file" name="profile_picture" accept="image/*" class="form-control" style="font-size: 12px; max-width: 280px; padding: 6px 10px;">
-          </div>
-          <div>
-            <button type="submit" class="btn btn-primary btn-sm">
-              Save Uploads
-            </button>
-          </div>
-        </form>
-      </div>
-      {% else %}
-      <div style="margin-top: 24px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.5;">
-          ℹ️ <b>Document & Profile Picture Policy:</b> Profile pictures and official documents are uploaded and managed exclusively by HR and Administrator. To update your profile photo or submit official documents, please contact HR or send an enquiry via your Employee Dashboard.
-        </p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-header">
-      <h3>Security: Change Password</h3>
-    </div>
-    <div class="panel-body">
-      <form method="POST">
-        {% csrf_token %}
-        <input type="hidden" name="change_password" value="1">
-        {% for field in password_form %}
-        <div class="form-group">
-          <label class="form-label">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<small style="color: var(--gray-600);">{{ field.help_text }}</small>{% endif %}
-        </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary">Update Password</button>
-      </form>
+<!-- Breadcrumb & Page Subheader (Matching Image Model) -->
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <button type="button" class="btn btn-outline btn-sm" onclick="window.history.back()" style="border-radius: 8px; font-size: 13px; font-weight: 600; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; border-color: #cbd5e1; background: #ffffff; color: #334155; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      &larr; Back
+    </button>
+    <div>
+      <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.2;">My Profile &amp; Account Settings</h2>
+      <p style="font-size: 13px; color: #64748b; margin: 3px 0 0 0;">Manage your personal information, documents and security settings.</p>
     </div>
   </div>
 </div>
+
+<!-- Modern Hero Banner (Background Image + Content on Top) -->
+<div class="employee-hero-banner hero-banner-account" style="position: relative; margin-bottom: 24px; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 22px rgba(0, 0, 0, 0.04); border: 1.5px solid #edf2f7; background: #eef6ff url('{% static 'images/banners/profile_settings_bg.png' %}') no-repeat right center; background-size: cover; min-height: 165px; padding: 26px 32px; display: flex; align-items: center; justify-content: space-between;">
+  <div class="hero-left-content" style="max-width: 580px; z-index: 2;">
+    <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; color: #2563eb; text-transform: uppercase; margin-bottom: 6px; background: rgba(255, 255, 255, 0.85); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(219, 234, 254, 0.8);">
+      ACCOUNT SETTINGS
+    </div>
+    <h2 style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; line-height: 1.2;">
+      My Profile &amp; Account Settings
+    </h2>
+    <p style="font-size: 14px; color: #475569; margin: 0; line-height: 1.5;">
+      Keep your information up to date and secure your account.
+    </p>
+  </div>
+</div>
+
+<!-- Two-Column Layout (Matching Image Model) -->
+<div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+
+  <!-- Left Column: Employee Dossier -->
+  <div class="modern-surface-card" style="background: #ffffff; border-radius: 20px; border: 1.5px solid #edf2f7; box-shadow: 0 4px 20px rgba(0,0,0,0.03); padding: 24px;">
+    
+    <!-- Header Row -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #bfdbfe;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">Employee Dossier</h3>
+          <p style="font-size: 12.5px; color: #64748b; margin: 2px 0 0 0;">Your basic profile information and official details.</p>
+        </div>
+      </div>
+      <span class="badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; text-transform: uppercase;">
+        {{ profile.get_role_display|default:profile.role|default:"EMPLOYEE" }}
+      </span>
+    </div>
+
+    <!-- Profile Identity Row -->
+    <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; background: #f8fafc; border-radius: 14px; border: 1px solid #eef2f6; margin-bottom: 20px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #059669; color: #ffffff; font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(5,150,105,0.25); overflow: hidden;">
+        {% if profile.profile_picture %}
+        <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" style="width: 100%; height: 100%; object-fit: cover;">
+        {% else %}
+        <span>{{ request.user.first_name|default:request.user.username|make_list|first|upper }}</span>
+        {% endif %}
+      </div>
+      <div style="flex: 1; min-width: 0;">
+        <h4 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 2px 0;">
+          {{ request.user.get_full_name|default:request.user.username }}
+        </h4>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 6px;">
+          {{ profile.designation.title|default:"Staff" }} &bull; {{ profile.department.name|default:"General" }}
+        </div>
+        <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 8px; font-size: 12px; color: #2563eb; font-weight: 600;">
+          <span>🪪 Employee Code: <b>{{ profile.employee_code }}</b></span>
+          <button type="button" onclick="navigator.clipboard.writeText('{{ profile.employee_code }}'); alert('Employee code copied!');" title="Copy code" style="background: none; border: none; cursor: pointer; padding: 0; color: #64748b; display: flex;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Details Table / List -->
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px;">
+      
+      <!-- Email -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          EMAIL
+        </span>
+        <div style="display: flex; align-items: center; gap: 8px; color: #0f172a; font-weight: 500;">
+          <span>{{ request.user.email|default:"Not specified" }}</span>
+          {% if request.user.email %}
+          <button type="button" onclick="navigator.clipboard.writeText('{{ request.user.email }}'); alert('Email address copied!');" title="Copy email" style="background: none; border: none; cursor: pointer; color: #64748b; padding: 0;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Phone -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          PHONE
+        </span>
+        <span style="color: #0f172a; font-weight: 500;">{{ profile.phone|default:"Not specified" }}</span>
+      </div>
+
+      <!-- Joining Date -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          JOINING DATE
+        </span>
+        <span style="color: #0f172a; font-weight: 500;">{{ profile.joining_date|date:"M d, Y"|default:profile.joining_date }}</span>
+      </div>
+
+      <!-- Casual Leave Balance -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          CASUAL LEAVE BALANCE
+        </span>
+        <span style="color: #0284c7; font-weight: 700;">{{ profile.casual_leave_balance }} Days</span>
+      </div>
+
+      <!-- Address -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          ADDRESS
+        </span>
+        <span style="color: #0f172a; font-weight: 500;">{{ profile.address|default:"Not specified" }}</span>
+      </div>
+
+      <!-- Submitted Document -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; font-size: 13px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          SUBMITTED DOCUMENT
+        </span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          {% if profile.document %}
+          <a href="{{ profile.document.url }}" target="_blank" class="btn btn-outline btn-sm" style="color: #2563eb; border-color: #93c5fd; font-size: 12px; padding: 4px 12px; border-radius: 6px; font-weight: 600;">
+            📄 View Document
+          </a>
+          {% else %}
+          <span style="color: #94a3b8; font-size: 12.5px;">No document uploaded</span>
+          {% endif %}
+          <button type="button" class="btn btn-primary btn-sm" onclick="openDocUploadModal()" style="border-radius: 8px; font-size: 12px; font-weight: 600; padding: 5px 14px; background: #2563eb;">
+            Upload
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document & Profile Picture Policy Alert (Matching Image Model) -->
+    <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; margin-top: 2px;">
+        i
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: #1e40af; margin-bottom: 2px;">Document &amp; Profile Picture Policy</div>
+        <div style="font-size: 12px; color: #3b82f6; line-height: 1.5;">
+          Profile pictures and official documents are uploaded and managed exclusively by HR and Administrator. To update your profile photo or submit official documents, please contact HR or send an enquiry via your Employee Dashboard.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Security: Change Password -->
+  <div class="modern-surface-card" style="background: #ffffff; border-radius: 20px; border: 1.5px solid #edf2f7; box-shadow: 0 4px 20px rgba(0,0,0,0.03); padding: 24px;">
+    
+    <!-- Header Row -->
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #fecaca;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <div>
+        <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0;">Security: Change Password</h3>
+        <p style="font-size: 12.5px; color: #64748b; margin: 2px 0 0 0;">Keep your account safe by using a strong password.</p>
+      </div>
+    </div>
+
+    <!-- Password Change Form (Matching Image Model) -->
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="change_password" value="1">
+
+      <!-- Old Password -->
+      <div style="margin-bottom: 16px;">
+        <label for="id_old_password" style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Old password</label>
+        <div style="position: relative;">
+          <input type="password" name="old_password" id="id_old_password" placeholder="Enter your current password" class="form-control" style="border-radius: 10px; padding: 10px 42px 10px 14px; border: 1.5px solid #e2e8f0; font-size: 13.5px; width: 100%; box-sizing: border-box;" required>
+          <button type="button" onclick="togglePasswordVisibility('id_old_password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0; display: flex;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- New Password -->
+      <div style="margin-bottom: 12px;">
+        <label for="id_new_password1" style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">New password</label>
+        <div style="position: relative;">
+          <input type="password" name="new_password1" id="id_new_password1" placeholder="Enter a new password" class="form-control" style="border-radius: 10px; padding: 10px 42px 10px 14px; border: 1.5px solid #e2e8f0; font-size: 13.5px; width: 100%; box-sizing: border-box;" required>
+          <button type="button" onclick="togglePasswordVisibility('id_new_password1', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0; display: flex;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Password Requirements Guidance Box (Matching Image Model) -->
+      <div style="background: #f0f7ff; border: 1px solid #d0e7ff; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: #1e40af; line-height: 1.6;">
+        <ul style="margin: 0; padding-left: 18px; list-style-type: disc;">
+          <li>Your password can't be too similar to your other personal information.</li>
+          <li>Your password must contain at least 8 characters.</li>
+          <li>Your password can't be a commonly used password.</li>
+          <li>Your password can't be entirely numeric.</li>
+        </ul>
+      </div>
+
+      <!-- New Password Confirmation -->
+      <div style="margin-bottom: 22px;">
+        <label for="id_new_password2" style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">New password confirmation</label>
+        <div style="position: relative;">
+          <input type="password" name="new_password2" id="id_new_password2" placeholder="Confirm your new password" class="form-control" style="border-radius: 10px; padding: 10px 42px 10px 14px; border: 1.5px solid #e2e8f0; font-size: 13.5px; width: 100%; box-sizing: border-box;" required>
+          <button type="button" onclick="togglePasswordVisibility('id_new_password2', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 0; display: flex;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 700; background: #2563eb; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(37,99,235,0.25); border: none; cursor: pointer; color: #fff; transition: background 0.2s;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Update Password</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Document Upload & Policy Modal -->
+<div id="docUploadModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+  <div style="background: #ffffff; border-radius: 20px; max-width: 480px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid #e2e8f0; animation: modalPop 0.2s ease;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 22px;">📄</span>
+        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">Official Document Upload</h3>
+      </div>
+      <button type="button" onclick="closeDocUploadModal()" style="background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 4px;">&times;</button>
+    </div>
+
+    {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
+    <!-- HR / Admin Direct Upload Form -->
+    <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px;">
+      {% csrf_token %}
+      <input type="hidden" name="update_document" value="1">
+      <p style="font-size: 13px; color: #475569; margin: 0 0 8px 0;">
+        You have HR/Admin permissions to upload employee documents and profile pictures.
+      </p>
+      <div>
+        <label style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Official Document (PDF / DOC):</label>
+        <input type="file" name="document" class="form-control" style="font-size: 13px; width: 100%;">
+      </div>
+      <div>
+        <label style="font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block;">Profile Picture (JPG / PNG):</label>
+        <input type="file" name="profile_picture" accept="image/*" class="form-control" style="font-size: 13px; width: 100%;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeDocUploadModal()" class="btn btn-outline btn-sm">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save Upload</button>
+      </div>
+    </form>
+    {% else %}
+    <!-- Regular Employee Notice (Zero File Inputs to pass security and unit test assertions) -->
+    <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;">
+      <div style="font-size: 13px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">Verification Required</div>
+      <div style="font-size: 12.5px; color: #2563eb; line-height: 1.5;">
+        Per company security policy, official documents and employee photos are verified and updated by the <b>HR Department</b>. Please send an enquiry or request to HR to have your documents updated.
+      </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <button type="button" onclick="closeDocUploadModal()" class="btn btn-outline btn-sm">Close</button>
+      <a href="{% url 'dashboard:hr_support' %}" class="btn btn-primary btn-sm" style="background: #2563eb;">
+        ✈ Contact HR Support
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function togglePasswordVisibility(fieldId, btn) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.style.color = '#2563eb';
+  } else {
+    input.type = 'password';
+    btn.style.color = '#94a3b8';
+  }
+}
+
+function openDocUploadModal() {
+  const modal = document.getElementById('docUploadModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeDocUploadModal() {
+  const modal = document.getElementById('docUploadModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Close modal on background click
+window.addEventListener('click', function(e) {
+  const modal = document.getElementById('docUploadModal');
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+</script>
 {% endblock %}
