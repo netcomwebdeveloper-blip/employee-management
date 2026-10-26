@@ -209,7 +209,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (User documents, profile photos)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+if 'test' in sys.argv:
+    import tempfile
+    MEDIA_ROOT = Path(tempfile.gettempdir()) / 'django_test_media'
+    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -221,6 +226,13 @@ LOGOUT_REDIRECT_URL = 'login'
 # Logging configuration
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+log_handlers = ['console']
+try:
+    with open(LOGS_DIR / 'application.log', 'a'):
+        log_handlers.append('file')
+except Exception:
+    pass
 
 LOGGING = {
     'version': 1,
@@ -236,6 +248,7 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': LOGS_DIR / 'application.log',
+            'delay': True,
             'formatter': 'verbose',
         },
         'console': {
@@ -243,7 +256,7 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': log_handlers,
         'level': 'INFO',
     },
 }

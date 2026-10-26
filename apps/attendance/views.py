@@ -8,7 +8,7 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from apps.users.decorators import hr_or_admin_required
 from apps.employees.models import Employee
-from .models import Attendance, DailyWork, AttendanceAuditLog, BiometricDevice
+from .models import Attendance, DailyWork, AttendanceAuditLog, BiometricDevice, DailyWorkPlan
 from .forms import ManualAttendanceForm, DailyWorkForm, BiometricDeviceForm
 from .biometric_service import test_device_connection, sync_biometric_device
 from .services import (
@@ -231,7 +231,7 @@ def attendance_list(request):
     devices = BiometricDevice.objects.all()
 
     context = {
-        'attendances': records,  # Passed for CSS scroll container
+        'attendances': records,
         'date_filter': date_filter,
         'employee_code': employee_code,
         'manual_form': manual_form,
@@ -334,8 +334,6 @@ def mark_official_duty(request):
     return redirect(request.META.get('HTTP_REFERER') or 'attendance:list')
 
 
-
-
 @login_required
 @hr_or_admin_required
 def device_manage(request):
@@ -396,9 +394,13 @@ def daily_work_list(request):
                 for err in err_list:
                     messages.error(request, err)
 
+    my_work_plans = DailyWorkPlan.objects.filter(employee=profile).order_by('-work_date', '-created_at') if profile else []
+
     context = {
         'works': works,
         'form': form,
         'is_management': is_management,
+        'profile': profile,
+        'my_work_plans': my_work_plans,
     }
     return render(request, 'attendance/daily_work_list.html', context)

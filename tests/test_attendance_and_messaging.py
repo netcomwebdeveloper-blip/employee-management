@@ -52,7 +52,8 @@ class AttendanceAndMessagingTests(TestCase):
             department=self.dept,
             designation=self.desig,
             basic_salary=Decimal('30000.00'),
-            casual_leave_balance=1
+            casual_leave_balance=1,
+            joining_date=date(2026, 1, 1)
         )
 
         today = timezone.localdate()
@@ -592,6 +593,3 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertIn('spreadsheetml.sheet', resp_all_excel['Content-Type'])
 
         self.client.logout()
-
-
-

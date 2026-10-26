@@ -46,3 +46,12 @@ class Employee(models.Model):
     @property
     def email(self):
         return self.user.email
+
+    @property
+    def remaining_permission_formatted(self):
+        try:
+            from apps.leave_management.views import get_or_create_monthly_permission_balance
+            pb = get_or_create_monthly_permission_balance(self)
+            return pb.remaining_formatted()
+        except Exception:
+            return "2h 00m"

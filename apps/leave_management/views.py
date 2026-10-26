@@ -246,6 +246,7 @@ def leave_list(request):
         'is_management': is_management,
         'pending_count': pending_count,
         'hr_notifications': hr_notifications,
+        'permission_balance': perm_balance,
     }
     return render(request, 'leave_management/leave_list.html', context)
 
