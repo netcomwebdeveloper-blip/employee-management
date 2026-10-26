@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NETCOM Employee Management Portal{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Collapsible Responsive Modern Sidebar -->
+    <aside class="app-sidebar" id="appSidebar">
+      <div class="sidebar-brand">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="{% static 'images/netcom_logo.png' %}" alt="Netcom Logo" class="sidebar-logo-img">
+          <div class="brand-text">
+            <h2 style="font-size: 13.5px; font-weight: 700; margin: 0; line-height: 1.25; color: #fff;">Netcom Computers Pvt. Ltd</h2>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="nav-label">HOME</div>
+
+        {% if current_profile.role == 'EMPLOYEE' %}
+        <!-- Employee Dedicated Navigation Matching Image Mockup -->
+        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'hr_dashboard' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{% url 'leave_management:list' %}" class="nav-link {% if request.resolver_match.app_name == 'leave_management' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M10 14l2 2 4-4"></path></svg>
+          </span>
+          <span>Leave Management</span>
+        </a>
+        <a href="{% url 'attendance:daily_work' %}" class="nav-link {% if request.resolver_match.url_name == 'daily_work' or request.resolver_match.app_name == 'attendance' and request.resolver_match.url_name == 'list' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </span>
+          <span>Report</span>
+        </a>
+        <a href="{% url 'dashboard:index' %}#sendMessageSection" class="nav-link">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </span>
+          <span>Connect HR</span>
+        </a>
+
+        {% else %}
+        <!-- Management & Administrator Navigation -->
+        <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'hr_dashboard' or request.resolver_match.url_name == 'hr_dashboard' and current_profile.role == 'HR' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          </span>
+          <span>Dashboard</span>
+        </a>
+
+        {% if current_profile.role == 'ADMIN' or request.user.is_superuser %}
+        <a href="{% url 'dashboard:hr_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'hr_dashboard' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          </span>
+          <span>HR Operations</span>
+        </a>
+        {% endif %}
+
+        {% if current_profile.role == 'ADMIN' or current_profile.role == 'HR' or request.user.is_superuser %}
+        <a href="{% url 'employees:list' %}" class="nav-link {% if request.resolver_match.app_name == 'employees' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <span>Employees</span>
+        </a>
+        <a href="{% url 'departments:list' %}" class="nav-link {% if request.resolver_match.app_name == 'departments' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M9 21V10h6v11M9 3h6v4H9z"></path></svg>
+          </span>
+          <span>Departments</span>
+        </a>
+
+        <div class="nav-label" style="margin-top: 14px;">Time & Leave</div>
+        <a href="{% url 'attendance:list' %}" class="nav-link {% if request.resolver_match.app_name == 'attendance' and request.resolver_match.url_name == 'list' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </span>
+          <span>Attendance</span>
+        </a>
+        <a href="{% url 'attendance:daily_work' %}" class="nav-link {% if request.resolver_match.url_name == 'daily_work' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          </span>
+          <span>Daily Work</span>
+        </a>
+        <a href="{% url 'leave_management:list' %}" class="nav-link {% if request.resolver_match.app_name == 'leave_management' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </span>
+          <span>Leave Requests</span>
+        </a>
+
+        <div class="nav-label" style="margin-top: 14px;">Finance & Analytics</div>
+        <a href="{% url 'payroll:list' %}" class="nav-link {% if request.resolver_match.app_name == 'payroll' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          </span>
+          <span>Payroll</span>
+        </a>
+        <a href="{% url 'reports:index' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' %}active{% endif %}">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          </span>
+          <span>Reports</span>
+        </a>
+        {% endif %}
+
+        {% if request.user.is_superuser or current_profile.role == 'ADMIN' %}
+        <div class="nav-label" style="margin-top: 14px;">System Control</div>
+        <a href="/django-admin/" class="nav-link" target="_blank">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
+          <span>Django Admin</span>
+        </a>
+        {% endif %}
+        {% endif %}
+      </nav>
+
+      <!-- Sidebar User Badge (Matching Image Model) -->
+      <div class="sidebar-user" style="padding: 18px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: auto;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div class="user-avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); background: #3b82f6; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+            {% if current_profile and current_profile.profile_picture %}
+            <img src="{{ current_profile.profile_picture.url }}" alt="{{ request.user.username }}" style="width: 100%; height: 100%; object-fit: cover;">
+            {% else %}
+            <span style="color: #fff; font-weight: 700; font-size: 16px;">{{ request.user.username|make_list|first|upper }}</span>
+            {% endif %}
+          </div>
+          <div class="user-info" style="overflow: hidden; line-height: 1.3;">
+            <div class="user-name" style="font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ request.user.first_name|default:request.user.username }}</div>
+            <div style="font-size: 11.5px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ current_profile.employee_code|default:request.user.username }}</div>
+          </div>
+        </div>
+        <a href="{% url 'logout' %}" class="sidebar-logout-btn" style="display: flex; align-items: center; gap: 8px; color: #f87171; text-decoration: none; font-size: 13px; font-weight: 600; padding: 7px 10px; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.12)'" onmouseout="this.style.background='transparent'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>Logout Account</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+      <header class="top-bar">
+        <div class="top-bar-left" style="display: flex; align-items: center; gap: 10px;">
+          <button class="toggle-sidebar-btn" id="sidebarToggleBtn" aria-label="Toggle navigation">
+            ☰
+          </button>
+          <button type="button" class="back-nav-btn" onclick="window.history.back()" title="Go back to previous page">
+            ⬅ Back
+          </button>
+          <h1 class="page-title" style="display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; color: var(--gray-900);">
+            {% block page_title %}Dashboard{% endblock %}
+          </h1>
+        </div>
+
+        <div class="top-bar-right" style="display: flex; align-items: center; gap: 14px;">
+          {% if active_popup and active_popup.image %}
+          <button type="button" class="btn btn-outline btn-sm" onclick="openGlobalAnnouncementModal()" title="View Announcement Popup" style="display: inline-flex; align-items: center; gap: 4px; border-color: #3b82f6; color: #2563eb;">
+            📢 Announcement
+          </button>
+          {% endif %}
+          
+          <div class="live-time-display" id="liveClockDisplay" style="font-size: 13px; font-weight: 600; color: var(--gray-700);">
+            Loading time...
+          </div>
+
+          <!-- Notification Bell Icon (Matching Image UI) -->
+          <div class="top-bar-bell" title="Notifications" style="position: relative; cursor: pointer; padding: 6px 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--gray-700); transition: background 0.2s;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </div>
+
+          <a href="{% url 'users:profile' %}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span>👤</span>
+            <span>My Account</span>
+          </a>
+          <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">
+            Logout
+          </a>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <!-- Notification Messages -->
+        {% if messages %}
+        <div class="alert-container">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }}">
+            <span>{{ message }}</span>
+            <button type="button" class="alert-close" style="background:none; border:none; cursor:pointer; font-size:16px; margin-left: 10px;">&times;</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% if active_popup and active_popup.image %}
+  <!-- Global Announcement Popup Modal (Displays on login & dashboards, persists on refresh) -->
+  <div class="announcement-popup-overlay active" id="globalAnnouncementModal">
+    <div class="announcement-popup-card">
+      <div class="announcement-popup-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">📢</span>
+          <h3 style="margin: 0; font-size: 16px; color: var(--dark); font-weight: 700;">{{ active_popup.title|default:"Netcom Corporate Announcement" }}</h3>
+        </div>
+        <button type="button" class="modal-close" onclick="closeGlobalAnnouncementModal()" title="Close">&times;</button>
+      </div>
+      <div class="announcement-popup-body">
+        <img src="{{ active_popup.image.url }}" alt="{{ active_popup.title }}" class="announcement-popup-img">
+        {% if active_popup.description %}
+        <p style="margin-top: 14px; font-size: 13.5px; color: var(--gray-700); line-height: 1.5; text-align: left;">
+          {{ active_popup.description }}
+        </p>
+        {% endif %}
+      </div>
+      <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeGlobalAnnouncementModal()">
+          Close Announcement
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    function closeGlobalAnnouncementModal() {
+      const modal = document.getElementById('globalAnnouncementModal');
+      if (modal) modal.classList.remove('active');
+    }
+    function openGlobalAnnouncementModal() {
+      const modal = document.getElementById('globalAnnouncementModal');
+      if (modal) modal.classList.add('active');
+    }
+  </script>
+  {% endif %}
+
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block page_title %}Employee Directory{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <h3>Staff Registry ({{ total_count }})</h3>
+    <a href="{% url 'employees:create' %}" class="btn btn-primary btn-sm">+ Register Employee</a>
+  </div>
+
+  <div class="panel-body" style="padding-bottom: 0;">
+    <!-- Filter bar -->
+    <form method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+      <input type="text" name="q" value="{{ query }}" class="form-input" placeholder="Search by name, code, phone..." style="flex: 2; min-width: 200px;">
+      <select name="department" class="form-select" style="flex: 1; min-width: 150px;">
+        <option value="">All Departments</option>
+        {% for d in departments %}
+        <option value="{{ d.id }}" {% if dept_filter == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="role" class="form-select" style="flex: 1; min-width: 130px;">
+        <option value="">All Roles</option>
+        <option value="ADMIN" {% if role_filter == "ADMIN" %}selected{% endif %}>Admin</option>
+        <option value="HR" {% if role_filter == "HR" %}selected{% endif %}>HR</option>
+        <option value="EMPLOYEE" {% if role_filter == "EMPLOYEE" %}selected{% endif %}>Employee</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      {% if query or role_filter or dept_filter %}
+      <a href="{% url 'employees:list' %}" class="btn btn-outline">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+<style>
+  .staff-registry-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .staff-registry-table th {
+    padding: 10px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  .staff-registry-table td {
+    padding: 9px 8px !important;
+    font-size: 12.5px !important;
+    color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+  }
+  .staff-registry-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+</style>
+
+  <div class="table-responsive" style="overflow-x: auto; width: 100%;">
+    <table class="data-table staff-registry-table">
+      <thead>
+        <tr>
+          <th style="width: 7%;">Code</th>
+          <th style="width: 18%;">Employee Name</th>
+          <th style="width: 11%;">Password</th>
+          <th style="width: 8%;">Document</th>
+          <th style="width: 11%;">Department</th>
+          <th style="width: 10%;">Designation</th>
+          <th style="width: 8%; text-align: center;">Role</th>
+          <th style="width: 9%;">Phone</th>
+          <th style="width: 6%; text-align: center;">Leave Bal.</th>
+          <th style="width: 6%; text-align: center;">Status</th>
+          <th style="width: 6%; text-align: center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td style="white-space: nowrap;"><b>{{ emp.employee_code }}</b></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              {% if emp.profile_picture %}
+              <img src="{{ emp.profile_picture.url }}" alt="{{ emp.display_name }}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 50%; border: 1px solid #cbd5e1; flex-shrink: 0;">
+              {% else %}
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #475569; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;">
+                {{ emp.user.username|make_list|first|upper }}
+              </div>
+              {% endif %}
+              <div style="line-height: 1.25; min-width: 0;">
+                <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ emp.display_name }}</div>
+                <small style="color: var(--gray-600); font-size: 11px;">@{{ emp.user.username }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+              <span id="listPwMasked_{{ emp.id }}" style="font-family: monospace; font-size: 12px; letter-spacing: 1px;">••••••</span>
+              <span id="listPwPlain_{{ emp.id }}" style="display: none; font-family: monospace; font-size: 11px; font-weight: 600; color: #1e40af; background: #eff6ff; padding: 1px 4px; border-radius: 4px;">{{ emp.raw_password|default:"emp12345" }}</span>
+              <button type="button" class="btn btn-outline btn-sm" style="padding: 1px 4px; font-size: 11px; line-height: 1.2;" onclick="toggleListPw('{{ emp.id }}')" title="Show / Hide Password">👁️</button>
+            </div>
+          </td>
+          <td>
+            {% if emp.document %}
+            <a href="{{ emp.document.url }}" target="_blank" class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: 11px; color: #2563eb; border-color: #3b82f6; white-space: nowrap;" title="View Submitted Document">
+              📄 Doc
+            </a>
+            {% else %}
+            <span style="color: #94a3b8; font-size: 11px;">None</span>
+            {% endif %}
+          </td>
+          <td style="white-space: nowrap;">{{ emp.department.name|default:"Unassigned" }}</td>
+          <td style="white-space: nowrap;">{{ emp.designation.title|default:"Staff" }}</td>
+          <td style="text-align: center; white-space: nowrap;">
+            <span class="badge {% if emp.role == 'ADMIN' %}badge-danger{% elif emp.role == 'HR' %}badge-primary{% else %}badge-gray{% endif %}" style="padding: 2px 8px; font-size: 11px;">
+              {{ emp.role }}
+            </span>
+          </td>
+          <td style="white-space: nowrap;">{{ emp.phone|default:"-" }}</td>
+          <td style="text-align: center; white-space: nowrap;"><b>{{ emp.casual_leave_balance }}d</b></td>
+          <td style="text-align: center; white-space: nowrap;">
+            {% if emp.is_active_employee %}
+            <span class="badge badge-success" style="padding: 2px 8px; font-size: 11px;">Active</span>
+            {% else %}
+            <span class="badge badge-danger" style="padding: 2px 8px; font-size: 11px;">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center; white-space: nowrap;">
+            <div style="display: inline-flex; gap: 4px;">
+              <a href="{% url 'employees:detail' emp.id %}" class="btn btn-outline btn-sm" style="padding: 3px 6px; font-size: 12px;" title="View Dossier">👁️</a>
+              <a href="{% url 'employees:edit' emp.id %}" class="btn btn-outline btn-sm" style="padding: 3px 6px; font-size: 12px;" title="Edit">✏️</a>
+              {% if emp.user.username != 'NETCOM' and not emp.user.is_superuser and emp.user != request.user %}
+                {% if current_profile.role == 'ADMIN' or request.user.is_superuser %}
+                <a href="{% url 'employees:delete' emp.id %}" class="btn btn-danger btn-sm" style="padding: 3px 6px; font-size: 12px;" title="Delete Employee" onclick="return confirm('Permanently delete {{ emp.display_name }}?');">🗑️</a>
+                {% elif current_profile.role == 'HR' and emp.role != 'ADMIN' %}
+                <a href="{% url 'employees:delete' emp.id %}" class="btn btn-danger btn-sm" style="padding: 3px 6px; font-size: 12px;" title="Delete Employee" onclick="return confirm('Permanently delete {{ emp.display_name }}?');">🗑️</a>
+                {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="11" style="text-align: center; color: #94a3b8; padding: 30px;">No employees matching criteria.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function toggleListPw(empId) {
+    const masked = document.getElementById('listPwMasked_' + empId);
+    const plain = document.getElementById('listPwPlain_' + empId);
+    if (!masked || !plain) return;
+    if (masked.style.display === 'none') {
+      masked.style.display = 'inline';
+      plain.style.display = 'none';
+    } else {
+      masked.style.display = 'none';
+      plain.style.display = 'inline';
+    }
+  }
+</script>
+{% endblock %}

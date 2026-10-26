@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% block page_title %}Report{% endblock %}
+
+{% block content %}
+<!-- Modern Hero Banner (Matching Image Model 3) -->
+<div class="employee-hero-banner hero-banner-report">
+  <div class="hero-left-content" style="max-width: 580px;">
+    <div class="hero-title-group">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+        <span style="font-size: 26px;">📊</span>
+        <h2 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Daily Work Updates</h2>
+      </div>
+      <p style="font-size: 13.5px; color: #334155; margin: 0; line-height: 1.5;">
+        Track and share your daily progress, tasks and accomplishments
+      </p>
+    </div>
+  </div>
+
+  <!-- Isometric 3D Graphic for Reports -->
+  <div class="hero-illustration">
+    <svg width="150" height="110" viewBox="0 0 180 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="90" cy="112" rx="75" ry="12" fill="#c7d2fe" opacity="0.55"/>
+      <!-- Tablet / Clipboard -->
+      <rect x="45" y="20" width="90" height="90" rx="10" fill="#4338ca"/>
+      <rect x="52" y="27" width="76" height="76" rx="6" fill="#ffffff"/>
+      <!-- Header Bar on paper -->
+      <rect x="60" y="36" width="38" height="6" rx="3" fill="#6366f1"/>
+      <circle cx="114" cy="39" r="4" fill="#10b981"/>
+      <!-- Bar Chart Elements -->
+      <rect x="62" y="76" width="8" height="18" rx="2" fill="#818cf8"/>
+      <rect x="74" y="66" width="8" height="28" rx="2" fill="#6366f1"/>
+      <rect x="86" y="56" width="8" height="38" rx="2" fill="#4f46e5"/>
+      <rect x="98" y="70" width="8" height="24" rx="2" fill="#a5b4fc"/>
+      <rect x="110" y="60" width="8" height="34" rx="2" fill="#10b981"/>
+      <!-- Floating Check Badge -->
+      <circle cx="140" cy="45" r="14" fill="#10b981"/>
+      <path d="M134 45l4 4 8-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Two-Column Layout (Matching Image Model 3) -->
+<div class="grid-2" style="align-items: start; gap: 24px;">
+  <!-- Left Column: Post Daily Work Report -->
+  <div class="modern-surface-card">
+    <div style="margin-bottom: 20px;">
+      <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">Post Daily Work Report</h3>
+      <p style="font-size: 13px; color: #64748b; margin: 0;">Log your completed tasks, milestones, and project activities</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="dailyWorkForm">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">Project / Module</label>
+        {{ form.project_name }}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">Task Progress & Details</label>
+        {{ form.work_details }}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">Status</label>
+        {{ form.status }}
+      </div>
+
+      <!-- Drag & Drop Style Photo Upload Box -->
+      <div class="form-group" style="margin-bottom: 22px;">
+        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">Attach Activity Photo / Site Verification Image</label>
+        
+        <div class="modern-dropzone" onclick="document.getElementById('id_work_image').click();" id="dropZoneContainer">
+          <div style="margin-bottom: 8px;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          </div>
+          <div style="font-size: 13.5px; font-weight: 600; color: #334155;">Drop project screenshots or site photos here</div>
+          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">or click to browse from device (JPG, PNG, WEBP max 5MB)</div>
+        </div>
+
+        <div style="display: none;">
+          {{ form.work_image }}
+        </div>
+        <img id="workImagePreview" class="work-image-preview-box" alt="Activity Preview" style="margin-top: 12px; border-radius: 8px;">
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+        <button type="reset" class="btn btn-outline" style="border-radius: 10px; padding: 11px 20px; font-weight: 600;" onclick="document.getElementById('workImagePreview').style.display='none';">
+          Reset
+        </button>
+        <button type="submit" class="btn-purple-action">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          <span>Submit Work Update</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Right Column: Recent Task Progress Feeds -->
+  <div class="modern-surface-card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">Recent Task Progress Feeds</h3>
+        <p style="font-size: 13px; color: #64748b; margin: 0;">Completed milestones and progress entries</p>
+      </div>
+      <span class="badge badge-primary" style="border-radius: 8px;">{{ works|length }} Feed(s)</span>
+    </div>
+
+    <div style="max-height: 600px; overflow-y: auto; padding-right: 4px;">
+      {% for w in works %}
+      <div style="padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <div>
+            <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">{{ w.project_name }}</h4>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+              <b>{{ w.employee.employee_code }}</b> ({{ w.employee.display_name }}) • {{ w.date|date:"M d, Y" }}
+            </div>
+            {% if w.is_offsite %}
+            <div style="margin-top: 4px;">
+              <span class="badge" style="background: #e0e7ff; color: #3730a3; font-size: 11px; border-radius: 6px;">
+                📍 Off-Site Activity{% if w.location_notes %}: {{ w.location_notes }}{% endif %}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+          <span class="badge {% if w.status == 'Completed' %}badge-success{% elif w.status == 'In Progress' %}badge-primary{% else %}badge-warning{% endif %}" style="border-radius: 6px; font-weight: 600;">
+            {{ w.status }}
+          </span>
+        </div>
+        <p style="font-size: 13.5px; color: #334155; line-height: 1.5; margin: 8px 0 0 0;">
+          {{ w.work_details }}
+        </p>
+
+        {% if w.work_image %}
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; gap: 10px;">
+          <img src="{{ w.work_image.url }}" alt="Work Photo" class="work-thumb" onclick="openWorkImageModal('{{ w.work_image.url }}')" title="Click to view full image" style="border-radius: 6px;">
+          <span style="font-size: 12px; color: #64748b;">
+            📷 Activity Verification Image attached (<a href="{{ w.work_image.url }}" target="_blank" style="color: #4f46e5; font-weight: 600;">Open Original</a>)
+          </span>
+        </div>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div style="text-align: center; color: #94a3b8; padding: 48px 20px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <div>No daily work logs recorded yet.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Full-Width Card: My Assigned Daily Work Plans (Matching Image Model 3) -->
+<div class="modern-surface-card" style="margin-top: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+    <div>
+      <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">My Assigned Daily Work Plans</h3>
+      <p style="font-size: 13px; color: #64748b; margin: 0;">Plans and responsibilities assigned directly by HR management</p>
+    </div>
+    <span class="badge badge-primary" style="border-radius: 8px;">{{ my_work_plans|length }} Planned Task(s)</span>
+  </div>
+
+  <div class="table-responsive" style="border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+    <table class="data-table" style="margin: 0;">
+      <thead>
+        <tr style="background: #f8fafc;">
+          <th>Work Date</th>
+          <th>Plan Title</th>
+          <th>Tasks & Responsibilities</th>
+          <th>Assigned By</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in my_work_plans %}
+        <tr>
+          <td style="white-space: nowrap;">
+            <b>{{ plan.work_date|date:"M d, Y (D)" }}</b>
+            {% if plan.work_date == today %}
+            <span class="badge badge-success" style="font-size: 10px; margin-left: 4px; border-radius: 4px;">Today</span>
+            {% endif %}
+          </td>
+          <td><b>{{ plan.title }}</b></td>
+          <td style="white-space: pre-wrap; font-size: 13px; line-height: 1.4; max-width: 420px;">{{ plan.tasks }}</td>
+          <td>{{ plan.assigned_by.get_full_name|default:plan.assigned_by.username|default:"HR Department" }}</td>
+          <td>
+            <span class="badge {% if plan.status == 'Completed' %}badge-success{% elif plan.status == 'In Progress' %}badge-primary{% elif plan.status == 'Deferred' %}badge-warning{% else %}badge-info{% endif %}" style="border-radius: 6px; font-weight: 600;">
+              {{ plan.status }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: #94a3b8; padding: 32px 20px;">
+            No daily work plans assigned yet. Check back when HR assigns your next tasks!
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Image Lightbox Modal -->
+<div class="modal-overlay" id="workImageModal" onclick="closeWorkImageModal()">
+  <div class="modal-card" style="max-width: 760px; background: transparent; box-shadow: none; border: none; text-align: center;" onclick="event.stopPropagation()">
+    <img id="workModalImg" src="" alt="Work Photo" style="max-width: 100%; max-height: 82vh; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+    <div style="margin-top: 14px;">
+      <button type="button" class="btn btn-outline" style="color: #fff; border-color: rgba(255,255,255,0.4); border-radius: 8px;" onclick="closeWorkImageModal()">Close Preview</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Work image preview
+  const workImgInput = document.getElementById('id_work_image') || document.getElementById('workImageInput');
+  const workImgPreview = document.getElementById('workImagePreview');
+  const dropZone = document.getElementById('dropZoneContainer');
+
+  if (workImgInput && workImgPreview) {
+    workImgInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          workImgPreview.src = e.target.result;
+          workImgPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        workImgPreview.style.display = 'none';
+      }
+    });
+  }
+
+  // Drag and drop handling on dropZone
+  if (dropZone && workImgInput) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#4f46e5';
+        dropZone.style.background = '#eef2ff';
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd5e1';
+        dropZone.style.background = '#f8fafc';
+      }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        workImgInput.files = files;
+        const event = new Event('change');
+        workImgInput.dispatchEvent(event);
+      }
+    }, false);
+  }
+
+  function openWorkImageModal(url) {
+    document.getElementById('workModalImg').src = url;
+    document.getElementById('workImageModal').classList.add('active');
+  }
+
+  function closeWorkImageModal() {
+    document.getElementById('workImageModal').classList.remove('active');
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,1047 @@
+{% extends 'base.html' %}
+{% block page_title %}Netcom Employee Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Welcome Greeting & Modern Hero Banner (Matching Image Model 1) -->
+<div class="employee-hero-banner hero-banner-dashboard">
+  <div class="hero-left-content">
+    <div class="hero-avatar-box">
+      {% if profile.profile_picture %}
+      <img src="{{ profile.profile_picture.url }}" alt="{{ profile.display_name }}">
+      {% else %}
+      <span>{{ request.user.first_name|default:request.user.username|make_list|first|upper }}</span>
+      {% endif %}
+    </div>
+    <div class="hero-title-group">
+      <h2>Welcome back, {{ profile.user.first_name|default:profile.display_name }}!</h2>
+      <div class="hero-meta-row">
+        <span>Staff ID: <b>{{ profile.employee_code }}</b></span>
+        <span>•</span>
+        <span>Role: <b>{{ profile.designation.title|default:profile.get_role_display }}</b></span>
+      </div>
+      <div>
+        <span class="hero-glow-pill">✨ Great to see you again! Keep up the good work!</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-illustration">
+    {% if active_popup and active_popup.image %}
+    <button type="button" onclick="openAnnouncementPopup()" class="btn btn-outline btn-sm" style="background: rgba(255,255,255,0.85); color: #2563eb; border-color: #93c5fd; font-weight: 600; box-shadow: 0 2px 6px rgba(37,99,235,0.12);">
+      📢 Announcement
+    </button>
+    {% endif %}
+    <!-- Modern Isometric / Flat Workspace Graphic -->
+    <svg width="170" height="110" viewBox="0 0 220 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="110" cy="120" rx="90" ry="14" fill="#cbd5e1" opacity="0.45"/>
+      <rect x="55" y="42" width="110" height="70" rx="8" fill="#3b82f6" opacity="0.9"/>
+      <rect x="62" y="48" width="96" height="58" rx="4" fill="#1e293b"/>
+      <rect x="68" y="54" width="40" height="6" rx="2" fill="#38bdf8"/>
+      <rect x="68" y="64" width="60" height="4" rx="2" fill="#94a3b8"/>
+      <rect x="68" y="72" width="50" height="4" rx="2" fill="#94a3b8"/>
+      <rect x="68" y="80" width="75" height="4" rx="2" fill="#94a3b8"/>
+      <circle cx="138" cy="74" r="12" fill="#6366f1" opacity="0.8"/>
+      <path d="M138 66v8l5 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M96 112h28l6 14H90l6-14z" fill="#94a3b8"/>
+      <rect x="80" y="125" width="60" height="4" rx="2" fill="#64748b"/>
+      <!-- Desk Plant -->
+      <path d="M178 98h14l-2 16h-10l-2-16z" fill="#d97706"/>
+      <circle cx="185" cy="94" r="5" fill="#10b981"/>
+      <circle cx="181" cy="90" r="4" fill="#059669"/>
+      <circle cx="189" cy="91" r="4.5" fill="#34d399"/>
+      <!-- Floating Check Badge -->
+      <circle cx="46" cy="50" r="13" fill="#10b981"/>
+      <path d="M41 50l3.5 3.5 7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</div>
+
+<!-- 4 Modern Stat Summary Cards Grid (Retaining all test identifiers) -->
+<div class="punch-horizontal-bar punch-cards-grid">
+  <!-- Card 1: PUNCH-IN-TIME -->
+  <div class="punch-card-box-modern punch-stat-item">
+    <div class="punch-card-top-row">
+      <div>
+        <span class="punch-card-label">PUNCH-IN-TIME</span>
+        <span class="punch-stat-label" style="display: none;">Punch-In Time</span>
+      </div>
+      <div class="punch-icon-circle icon-circle-green punch-stat-icon icon-green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+    </div>
+    <div>
+      {% if attendance.in_time %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #16a34a;">{{ attendance.in_time|time:"h:i A" }}</div>
+      <div class="punch-card-subtext">Punched In Today</div>
+      {% elif attendance.status == 'Missed Punch-In' or has_missed_punch_in %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #dc2626;">Missed Punch-In</div>
+      <div class="punch-card-subtext">Contact HR for regularization</div>
+      {% else %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #0f172a;">Pending(12 AM)</div>
+      <div class="punch-card-subtext">Standard: 09:30 AM</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Card 2: PUNCH-OUT-TIME -->
+  <div class="punch-card-box-modern punch-stat-item">
+    <div class="punch-card-top-row">
+      <div>
+        <span class="punch-card-label">PUNCH-OUT-TIME</span>
+        <span class="punch-stat-label" style="display: none;">Punch-Out Time</span>
+      </div>
+      <div class="punch-icon-circle icon-circle-salmon punch-stat-icon icon-yellow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+    </div>
+    <div>
+      {% if attendance.out_time %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #e11d48;">{{ attendance.out_time|time:"h:i A" }}</div>
+      <div class="punch-card-subtext">Punched Out Today</div>
+      {% elif attendance.in_time %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #f97316;">Missing</div>
+      <div class="punch-card-subtext">Punch out before leaving</div>
+      {% else %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #64748b;">---------</div>
+      <div class="punch-card-subtext">Standard: 06:30 PM</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Card 3: TOTAL WORKING HOURS -->
+  <div class="punch-card-box-modern punch-stat-item">
+    <div class="punch-card-top-row">
+      <div>
+        <span class="punch-card-label">TOTAL WORKING HOURS</span>
+        <span class="punch-stat-label" style="display: none;">Total Working Time</span>
+      </div>
+      <div class="punch-icon-circle icon-circle-purple punch-stat-icon icon-blue">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      </div>
+    </div>
+    <div>
+      {% if attendance.is_missing_punch_out or has_missing_punch_out %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #dc2626; font-size: 16px;">Incomplete</div>
+      <div class="punch-card-subtext">Incomplete Attendance</div>
+      {% else %}
+      <div class="punch-card-main-val punch-stat-value" style="color: #0f172a;">{{ attendance.total_work_time|default:"0h 0m" }}</div>
+      <div class="punch-card-subtext">Goal: 9h per day</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Card 4: CASUAL LEAVE BALANCE -->
+  <div class="punch-card-box-modern punch-stat-item">
+    <div class="punch-card-top-row">
+      <div>
+        <span class="punch-card-label">CASUAL LEAVE BALANCE</span>
+        <span class="punch-stat-label" style="display: none;">Casual Leave Balance</span>
+      </div>
+      <div class="punch-icon-circle icon-circle-blue punch-stat-icon icon-purple">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      </div>
+    </div>
+    <div>
+      <div class="punch-card-main-val punch-stat-value" style="color: #4f46e5;">{{ profile.casual_leave_balance }} Days</div>
+      <div class="punch-card-subtext" style="color: #0284c7; font-weight: 600;">
+        Remaining Permission : {{ profile.remaining_permission_formatted }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if today_office_leave %}
+<div class="alert alert-success" style="margin-bottom: 20px; background: #ecfdf5; border: 2px solid #059669; border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 4px 12px rgba(5,150,105,0.12); color: #065f46;">
+  <span style="font-size: 26px;">🏛️</span>
+  <div>
+    <div style="font-weight: 700; color: #065f46; font-size: 15px;">Official Office Holiday: {{ today_office_leave.title }} (Approved Paid Leave)</div>
+    <div style="color: #047857; font-size: 13px; margin-top: 2px;">
+      Today is an official office holiday / approved non-working day. All staff receive full-day paid salary credit (Green Status) without being marked as Leave Without Pay (LWP).
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if active_work_plan_notification %}
+<div class="alert alert-info" style="margin-bottom: 20px; border-left: 5px solid #2563eb; background: #eff6ff; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(37,99,235,0.1);">
+  <div style="display: flex; align-items: flex-start; gap: 14px;">
+    <span style="font-size: 28px; line-height: 1;">📋</span>
+    <div>
+      <div style="font-weight: 700; color: #1e40af; font-size: 15.5px; margin-bottom: 4px;">
+        Daily Work Plan Assigned by HR (Planned For: {{ active_work_plan_notification.work_date|date:"l, F d, Y" }})
+      </div>
+      <div style="color: #1e293b; font-size: 13.5px; line-height: 1.5; font-weight: 500;">
+        <b>{{ active_work_plan_notification.title }}:</b> {{ active_work_plan_notification.tasks }}
+      </div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 5px;">
+        👤 Assigned by: <b>{{ active_work_plan_notification.assigned_by.get_full_name|default:active_work_plan_notification.assigned_by.username|default:"HR Department" }}</b> &bull; Status: <span class="badge badge-primary">{{ active_work_plan_notification.status }}</span> &bull; Sent: {{ active_work_plan_notification.created_at|date:"M d, H:i" }}
+      </div>
+    </div>
+  </div>
+  <a href="#myWorkPlansSection" class="btn btn-primary btn-sm" style="white-space: nowrap; margin-left: 12px;">View Work Plans</a>
+</div>
+{% endif %}
+
+<!-- Attendance Section: Self-Service Punch Terminal (Left) & Old Visual Calendar (Right) -->
+<div style="margin-bottom: 24px;">
+  <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    <span>Attendance</span>
+  </h2>
+
+  <div class="grid-2 grid-punch-calendar" style="align-items: stretch;">
+    <!-- Left Column: Self-Service Punch Terminal -->
+    <div class="panel punch-panel" style="border: none; background: transparent; box-shadow: none; display: flex; flex-direction: column;">
+      <div class="terminal-dark-interior" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div class="terminal-header-row">
+            <span class="terminal-title-text">Self-Service Punch Terminal</span>
+            <div class="terminal-gps-badge location-badge" id="empGpsBadge">
+              <span id="gpsIcon">📍</span> <span id="gpsText">Acquiring GPS Location...</span>
+            </div>
+          </div>
+
+          <!-- Digital Clock Display -->
+          <div class="digital-neon-clock punch-timer-display" id="employeeLiveClock">--:--:--</div>
+
+          <!-- Camera Preview Screen -->
+          <div class="camera-preview-modern camera-preview-box" id="cameraBox">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            <div id="cameraFallbackNotice" style="display: none; position: absolute; text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">
+              📷 Camera preview loading or inactive.<br/><small>Punches recorded with verified timestamp & IP.</small>
+            </div>
+          </div>
+          <canvas id="cameraCanvas" width="320" height="240" style="display: none;"></canvas>
+
+          {% if attendance.in_location %}
+          <p style="font-size: 11.5px; opacity: 0.85; margin: 8px 0 0 0; color: #94a3b8;">
+            Punch In Location: <small style="color: #cbd5e1;">{{ attendance.in_location }}</small>
+          </p>
+          {% endif %}
+        </div>
+
+        <div>
+          <!-- Punch Actions -->
+          <form method="POST" action="{% url 'attendance:punch' %}" id="punchForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            {% csrf_token %}
+            <input type="hidden" name="photo_data" id="photoDataInput" value="">
+            <input type="hidden" name="latitude" id="latitudeInput" value="">
+            <input type="hidden" name="longitude" id="longitudeInput" value="">
+            <input type="hidden" name="location" id="locationInput" value="">
+
+            <button type="button" id="empPunchInBtn" onclick="executePunch('punch_in')" class="btn-punch-action-green" {% if attendance.in_time %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+              <span>🟢</span> Punch In
+            </button>
+            <button type="button" id="empPunchOutBtn" onclick="executePunch('punch_out')" class="btn-punch-action-salmon" {% if not attendance.in_time or attendance.out_time %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+              <span>🔴</span> Punch Out
+            </button>
+          </form>
+
+          {% if attendance.in_photo or attendance.out_photo %}
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; gap: 14px; align-items: center; font-size: 11.5px;">
+            <span style="color: #94a3b8;">Verified Photos:</span>
+            {% if attendance.in_photo %}
+            <a href="{{ attendance.in_photo.url }}" target="_blank" style="color: #38bdf8; text-decoration: none;">🖼️ In Photo</a>
+            {% endif %}
+            {% if attendance.out_photo %}
+            <a href="{{ attendance.out_photo.url }}" target="_blank" style="color: #38bdf8; text-decoration: none;">🖼️ Out Photo</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: The Old Visual Interactive Calendar (Preserved per User Constraint) -->
+    <div class="panel calendar-panel" style="border-radius: 16px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="panel-header" style="justify-content: space-between; border-radius: 16px 16px 0 0; background: #ffffff;">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-outline btn-sm" style="border-radius: 8px;">◀ Prev</a>
+        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a;">{{ month_name }} {{ current_year }} Attendance</h3>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-outline btn-sm" style="border-radius: 8px;">Next ▶</a>
+      </div>
+      <div class="panel-body calendar-panel-body" style="flex: 1; padding: 14px;">
+        <table class="calendar-widget" style="width: 100%; height: 100%;">
+          <thead>
+            <tr>
+              <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for week in calendar_rows %}
+            <tr>
+              {% for day in week %}
+              <td class="{{ day.class_name }}" title="{{ day.label }}" style="text-align: center; vertical-align: middle;">
+                <span>{{ day.day }}</span>
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <!-- Clean Calendar Legend Bar -->
+      <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: #475569;">
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #22c55e;"></span> Present</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #f59e0b;"></span> Half Day</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; border: 2px solid #16a34a; background: #f0fdf4;"></span> Approved Leave</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #ef4444;"></span> Absent</span>
+        <span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: #10b981;"></span> Office Holiday</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- My Daily Work Details & My Leave Details -->
+<div class="grid-2">
+  <!-- My Daily Work Details -->
+  <div class="panel" style="border-radius: 16px; border: 1px solid #e2e8f0;">
+    <div class="panel-header" style="border-radius: 16px 16px 0 0;">
+      <div>
+        <h3 style="font-weight: 700; color: #0f172a;">My Daily Work Details</h3>
+      </div>
+      <a href="{% url 'attendance:daily_work' %}" class="btn btn-outline btn-sm" style="border-radius: 8px;">Task History</a>
+    </div>
+    <div class="scroll-container-4">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Project</th>
+            <th>Work Accomplishments</th>
+            <th>Attachment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in my_daily_work_details %}
+          <tr>
+            <td style="white-space: nowrap;"><b>{{ w.date|date:"M d, Y" }}</b></td>
+            <td>
+              <b>{{ w.project_name }}</b>
+              {% if w.is_offsite %}
+              <div>
+                <span class="badge" style="background: #e0e7ff; color: #3730a3; font-size: 10px; margin-top: 2px;">
+                  📍 Off-Site{% if w.location_notes %}: {{ w.location_notes }}{% endif %}
+                </span>
+              </div>
+              {% endif %}
+            </td>
+            <td style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ w.work_details }}">{{ w.work_details }}</td>
+            <td>
+              {% if w.work_image %}
+              <img src="{{ w.work_image.url }}" alt="Attachment" class="work-thumb" onclick="openEmpImageModal('{{ w.work_image.url }}')" title="Click to view full photo">
+              {% else %}
+              <span style="color: #94a3b8; font-size: 11px;">None</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {% if w.status == 'Completed' %}badge-success{% elif w.status == 'In Progress' %}badge-primary{% else %}badge-warning{% endif %}">
+                {{ w.status }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">No daily work tasks logged yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- My Leave Details -->
+  <div class="panel" style="border-radius: 16px; border: 1px solid #e2e8f0;">
+    <div class="panel-header" style="border-radius: 16px 16px 0 0;">
+      <div>
+        <h3 style="font-weight: 700; color: #0f172a;">My Leave Details</h3>
+      </div>
+      <a href="{% url 'leave_management:list' %}" class="btn btn-outline btn-sm" style="border-radius: 8px;">Apply / View</a>
+    </div>
+    <div class="scroll-container-4">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in my_leave_details %}
+          <tr>
+            <td><b>{{ l.leave_type }}</b></td>
+            <td>{{ l.from_date|date:"M d, Y" }}</td>
+            <td>{{ l.to_date|date:"M d, Y" }}</td>
+            <td><span class="badge badge-primary">{{ l.total_days }}d</span></td>
+            <td>
+              <span class="badge {% if l.status == 'Approved' %}badge-success{% elif l.status == 'Rejected' %}badge-danger{% elif l.status == 'Cancelled' %}badge-gray{% else %}badge-warning{% endif %}">
+                {{ l.status }}
+              </span>
+              {% if l.rejection_reason %}
+              <div style="font-size: 11px; color: {% if l.status == 'Cancelled' %}#64748b{% else %}#ef4444{% endif %}; margin-top: 3px; max-width: 140px; word-break: break-word;">
+                <b>Reason:</b> {{ l.rejection_reason }}
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">No leave applications found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Submission Cards for Daily Work and Leave Applications -->
+<div class="grid-2" style="margin-top: 24px;">
+  <!-- Daily Work Progress Submission -->
+  <div class="panel" style="border-radius: 16px; border: 1px solid #e2e8f0;">
+    <div class="panel-header" style="border-radius: 16px 16px 0 0;">
+      <h3 style="font-weight: 700; color: #0f172a;">Submit Today's Work Report</h3>
+    </div>
+    <div class="panel-body">
+      <form method="POST" action="{% url 'attendance:daily_work' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Project / Task</label>
+          {{ work_form.project_name }}
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Work Accomplishments</label>
+          {{ work_form.work_details }}
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Status</label>
+          {{ work_form.status }}
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Attach Work Photo / Verification Image</label>
+          {{ work_form.work_image }}
+          <img id="empWorkImgPreview" class="work-image-preview-box" alt="Preview">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px; border-radius: 8px;">Submit Work Log</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Apply for Leave Modal/Form -->
+  <div class="panel" style="border-radius: 16px; border: 1px solid #e2e8f0;">
+    <div class="panel-header" style="border-radius: 16px 16px 0 0;">
+      <h3 id="leavePanelHeading" style="font-weight: 700; color: #0f172a;">Apply for Leave</h3>
+    </div>
+    <div class="panel-body">
+      <form method="POST" action="{% url 'leave_management:list' %}" id="employeeLeaveForm">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Leave Category</label>
+          {{ leave_form.leave_type }}
+        </div>
+
+        <!-- Standard Date Range Fields (for Casual/Sick leave) -->
+        <div id="standardDateRangeGroup" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">From Date</label>
+            {{ leave_form.from_date }}
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">To Date</label>
+            {{ leave_form.to_date }}
+          </div>
+        </div>
+
+        <!-- Permission-specific Fields (Dynamic when "Permission" selected) -->
+        <div id="permissionFieldsGroup" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Permission Date</label>
+            <input type="date" name="permission_date" id="permDateInput" class="form-input" value="{{ today|date:'Y-m-d' }}" onchange="calculatePermissionDuration()">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">From Time</label>
+              <input type="time" name="from_time" id="permFromTime" class="form-input" value="10:00" onchange="calculatePermissionDuration()">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">To Time</label>
+              <input type="time" name="to_time" id="permToTime" class="form-input" value="11:30" onchange="calculatePermissionDuration()">
+            </div>
+          </div>
+          <div id="permDurationNotice" style="display: none; margin-bottom: 12px; font-size: 12px;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Reason</label>
+          {{ leave_form.reason }}
+        </div>
+        <button type="submit" id="submitLeaveBtn" class="btn btn-primary" style="width: 100%; border-radius: 8px;">Submit Leave Application</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- My Assigned Daily Work Plans by HR -->
+<div class="panel" id="myWorkPlansSection" style="margin-top: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
+  <div class="panel-header" style="border-radius: 16px 16px 0 0;">
+    <div>
+      <h3 style="font-weight: 700; color: #0f172a;">My Assigned Daily Work Plans</h3>
+      <small style="color: var(--gray-600);">Daily work tasks, schedules, and responsibilities assigned by HR</small>
+    </div>
+    <span class="badge badge-primary">{{ my_work_plans|length }} Planned Task(s)</span>
+  </div>
+  <div class="scroll-container-5">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Work Date</th>
+          <th>Plan Title</th>
+          <th>Tasks & Responsibilities</th>
+          <th>Assigned By</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in my_work_plans %}
+        <tr>
+          <td style="white-space: nowrap;">
+            <b>{{ plan.work_date|date:"M d, Y (D)" }}</b>
+            {% if plan.work_date == today %}
+            <span class="badge badge-success" style="font-size: 10px; margin-left: 4px;">Today</span>
+            {% endif %}
+          </td>
+          <td><b>{{ plan.title }}</b></td>
+          <td style="white-space: pre-wrap; font-size: 13px; line-height: 1.4; max-width: 380px;">{{ plan.tasks }}</td>
+          <td>{{ plan.assigned_by.get_full_name|default:plan.assigned_by.username|default:"HR Department" }}</td>
+          <td>
+            <span class="badge {% if plan.status == 'Completed' %}badge-success{% elif plan.status == 'In Progress' %}badge-primary{% elif plan.status == 'Deferred' %}badge-warning{% else %}badge-info{% endif %}">
+              {{ plan.status }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">No daily work plans assigned yet. Check back when HR assigns your next tasks!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Official Document & Profile Picture Section (Read-Only for Employees; Upload Managed Exclusively by HR and Admin) -->
+<div class="panel" id="documentSubmissionSection" style="margin-top: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
+  <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px; border-radius: 16px 16px 0 0;">
+    <div>
+      <h3 style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #0f172a;">
+        <span>📄</span> Official Documents & Profile Picture
+      </h3>
+      <small style="color: var(--gray-600);">Official employee credentials, identity documents, and profile photo managed by HR and Administration.</small>
+    </div>
+    <div>
+      {% if profile.document and profile.profile_picture %}
+      <span class="badge badge-success" style="font-size: 11.5px; padding: 4px 10px;">All Files Verified & Active ✅</span>
+      {% elif profile.document or profile.profile_picture %}
+      <span class="badge badge-warning" style="font-size: 11.5px; padding: 4px 10px;">Partially Registered ⚠️</span>
+      {% else %}
+      <span class="badge badge-gray" style="font-size: 11.5px; padding: 4px 10px;">Pending HR Upload</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      
+      <!-- Card 1: Profile Picture -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+              <span>🖼️</span> Profile Picture
+            </h4>
+            {% if profile.profile_picture %}
+            <span class="badge badge-success" style="font-size: 10.5px;">Active Photo</span>
+            {% else %}
+            <span class="badge badge-gray" style="font-size: 10.5px;">Not Uploaded</span>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px; background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+            <div style="width: 68px; height: 68px; border-radius: 50%; overflow: hidden; border: 2.5px solid #3b82f6; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #1e40af; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              {% if profile.profile_picture %}
+              <img src="{{ profile.profile_picture.url }}" alt="{{ profile.display_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+              {% else %}
+              {{ request.user.username|make_list|first|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">{{ profile.display_name }}</div>
+              <div style="font-size: 12px; color: #64748b; margin-top: 2px;">{{ profile.employee_code }} &bull; {{ profile.designation.title|default:"Staff" }}</div>
+              {% if profile.profile_picture %}
+              <div style="margin-top: 6px;">
+                <a href="{{ profile.profile_picture.url }}" target="_blank" class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 11px; color: #2563eb; border-color: #3b82f6; border-radius: 6px;">
+                  👁️ View Full Photo
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 10px 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 11.5px; display: block; line-height: 1.4;">
+            ℹ️ Profile pictures are uploaded and managed exclusively by HR and Admin. If you need to update your picture, contact HR.
+          </small>
+        </div>
+      </div>
+
+      <!-- Card 2: Required Official Document -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+              <span>📄</span> Submitted Official Document
+            </h4>
+            {% if profile.document %}
+            <span class="badge badge-success" style="font-size: 10.5px;">Saved & Verified ✅</span>
+            {% else %}
+            <span class="badge badge-warning" style="font-size: 10.5px;">Pending HR Upload</span>
+            {% endif %}
+          </div>
+
+          <div style="margin-bottom: 16px; background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+            {% if profile.document %}
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; word-break: break-all;">
+                  📎 {{ profile.document.name|slice:"19:"|default:profile.document.name }}
+                </div>
+                <div style="font-size: 11px; color: #059669; font-weight: 600; margin-top: 2px;">
+                  Status: Available and saved in database
+                </div>
+              </div>
+              <a href="{{ profile.document.url }}" target="_blank" class="btn btn-success btn-sm" style="padding: 4px 12px; font-size: 12px; white-space: nowrap; border-radius: 6px;">
+                📄 View Document
+              </a>
+            </div>
+            {% else %}
+            <div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 8px;">
+              ⚠️ No official document uploaded yet.<br/>
+              <small style="color: #94a3b8;">Official documents are uploaded and maintained exclusively by HR and Admin.</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="padding: 10px 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 11.5px; display: block; line-height: 1.4;">
+            ℹ️ Official documents are uploaded and maintained exclusively by HR and Admin.
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Send Message Section: Employee Enquiries & HR Communication -->
+<div class="panel" id="sendMessageSection" style="margin-top: 24px; border-radius: 16px; border: 1px solid #e2e8f0;">
+  <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px; border-radius: 16px 16px 0 0;">
+    <div>
+      <h3 style="font-weight: 700; color: #0f172a;">💬 Send Message to HR Department</h3>
+      <small style="color: var(--gray-600);">Send enquiries, ask questions, report attendance issues (like missing punch-out), or communicate work-related concerns directly to HR.</small>
+    </div>
+    <span class="badge badge-primary">Direct HR Communication</span>
+  </div>
+
+  <div class="panel-body">
+    <div class="grid-2" style="gap: 20px;">
+      <!-- Form to Send Message -->
+      <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 18px;">
+        <h4 style="margin-bottom: 14px; color: #1e293b; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+          <span>✉️</span> New Message / Enquiry
+        </h4>
+        <form method="POST" action="{% url 'dashboard:index' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="send_hr_message">
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-weight: 600;">Enquiry Category *</label>
+            <select name="category" class="form-select" required style="border-radius: 8px;">
+              <option value="Attendance Regularization / Missing Punch-Out">Attendance Correction / Missing Punch-Out</option>
+              <option value="General Enquiry" selected>General Enquiry</option>
+              <option value="Policy or Leave Question">Question Regarding Company Policy / Leave</option>
+              <option value="Payroll & Salary Concern">Payroll & Salary Concern</option>
+              <option value="Work-Related Concern">Work-Related Concern / Task Query</option>
+              <option value="Official Duty Verification">Official Duty Verification</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-weight: 600;">Subject *</label>
+            <input type="text" name="subject" class="form-input" required placeholder="e.g. Missing punch-out time correction for today" style="border-radius: 8px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600;">Message / Details *</label>
+            <textarea name="message" class="form-input" rows="4" required placeholder="Type your enquiry, question, or work-related concern in detail for the HR department..." style="border-radius: 8px;"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 600;">
+            📤 Send Message to HR
+          </button>
+        </form>
+      </div>
+
+      <!-- Previously Sent Messages / History -->
+      <div>
+        <h4 style="margin-bottom: 14px; color: #1e293b; display: flex; align-items: center; justify-content: space-between; font-weight: 700;">
+          <span style="display: flex; align-items: center; gap: 8px;"><span>📋</span> My Sent Messages ({{ my_sent_messages|length }})</span>
+          <small style="font-size: 12px; color: var(--gray-600); font-weight: normal;">Live HR Delivery</small>
+        </h4>
+
+        <div class="scroll-container-4" style="max-height: 330px; overflow-y: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Subject & Category</th>
+                <th>HR Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for msg in my_sent_messages %}
+              <tr>
+                <td style="white-space: nowrap; font-size: 12px;">
+                  <b>{{ msg.created_at|date:"M d, Y" }}</b><br/>
+                  <small style="color: var(--gray-600);">{{ msg.created_at|time:"h:i A" }}</small>
+                </td>
+                <td>
+                  <div style="font-weight: 600; font-size: 13px; color: #1e293b;">{{ msg.title }}</div>
+                  <div style="font-size: 11.5px; color: #64748b; margin-top: 2px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ msg.message }}">
+                    {{ msg.message }}
+                  </div>
+                </td>
+                <td>
+                  {% if msg.is_read %}
+                  <span class="badge badge-success" style="font-size: 11px; white-space: nowrap;">✓ Reviewed by HR</span>
+                  {% else %}
+                  <span class="badge badge-warning" style="font-size: 11px; white-space: nowrap;">⏳ Pending Review</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" style="text-align: center; color: #94a3b8; padding: 24px; font-size: 13px;">
+                  No messages sent yet. Use the form to contact HR directly with any question, enquiry, or attendance concern.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= POPUP MODAL FOR EMPLOYEE LOGIN ================= -->
+{% if active_banner and active_banner.image %}
+<div class="modal-overlay" id="employeeAnnouncementModal">
+  <div class="announcement-modal-dialog">
+    <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0f172a); color: #fff;">
+      <h3 style="color: #fff; font-size: 16px;">📢 {{ active_banner.title|default:"Company Announcement" }}</h3>
+      <button type="button" class="modal-close" onclick="closeAnnouncementPopup()" style="color: #fff;" title="Close">&times;</button>
+    </div>
+    <div style="padding: 0; background: #000; text-align: center;">
+      <img src="{{ active_banner.image.url }}" alt="{{ active_banner.title }}" class="announcement-banner-preview">
+    </div>
+    <div style="padding: 16px 20px; background: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <small style="color: var(--gray-600);">Published by Netcom Management • {{ active_banner.created_at|date:"M d, Y" }}</small>
+      <button type="button" class="btn btn-primary btn-sm" onclick="closeAnnouncementPopup()">
+        ✕ Close Announcement
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // 1. Automatic Announcement Popup Display on Employee Dashboard Entry
+  const bannerId = "{{ active_banner.id|default:'0' }}";
+  function checkAndShowAnnouncementPopup() {
+    {% if active_banner and active_banner.image %}
+    const modal = document.getElementById('employeeAnnouncementModal');
+    if (modal) {
+      const isDismissed = sessionStorage.getItem('dismissed_banner_' + bannerId);
+      if (!isDismissed) {
+        modal.classList.add('active');
+      }
+    }
+    {% endif %}
+  }
+
+  function openAnnouncementPopup() {
+    const modal = document.getElementById('employeeAnnouncementModal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeAnnouncementPopup() {
+    const modal = document.getElementById('employeeAnnouncementModal');
+    if (modal) {
+      modal.classList.remove('active');
+      sessionStorage.setItem('dismissed_banner_' + bannerId, 'true');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    checkAndShowAnnouncementPopup();
+  });
+
+  // 2. Live Clock Display
+  function updateEmpClock() {
+    const el = document.getElementById('employeeLiveClock');
+    if (el) {
+      const now = new Date();
+      el.textContent = now.toLocaleTimeString();
+    }
+  }
+  updateEmpClock();
+  setInterval(updateEmpClock, 1000);
+
+  // 3. Camera Stream Ingestion
+  let cameraStream = null;
+  const cameraVideo = document.getElementById('cameraVideo');
+  const cameraFallback = document.getElementById('cameraFallbackNotice');
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } })
+      .then(function(stream) {
+        cameraStream = stream;
+        cameraVideo.srcObject = stream;
+        cameraVideo.style.display = 'block';
+        if (cameraFallback) cameraFallback.style.display = 'none';
+      })
+      .catch(function(err) {
+        if (cameraFallback) cameraFallback.style.display = 'block';
+      });
+  } else {
+    if (cameraFallback) cameraFallback.style.display = 'block';
+  }
+
+  // 4. Geolocation Acquisition
+  let currentLatitude = null;
+  let currentLongitude = null;
+  const gpsBadge = document.getElementById('empGpsBadge');
+  const gpsText = document.getElementById('gpsText');
+
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        currentLatitude = pos.coords.latitude;
+        currentLongitude = pos.coords.longitude;
+        if (gpsText) {
+          gpsText.textContent = `GPS: ${currentLatitude.toFixed(4)}, ${currentLongitude.toFixed(4)}`;
+        }
+        if (gpsBadge) {
+          gpsBadge.style.background = 'rgba(34, 197, 94, 0.2)';
+          gpsBadge.style.color = '#86efac';
+        }
+      },
+      function(err) {
+        if (gpsText) gpsText.textContent = 'GPS location via Network IP';
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  } else {
+    if (gpsText) gpsText.textContent = 'GPS not supported in browser';
+  }
+
+  // 5. Punch Execution with Snapshot & GPS
+  let punchSubmitting = false;
+  function executePunch(actionType) {
+    if (punchSubmitting) return;
+
+    if (!currentLatitude || !currentLongitude) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nGPS location access is unavailable, invalid, or was denied. Please allow location access in your browser settings to record your punch.");
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            currentLatitude = pos.coords.latitude;
+            currentLongitude = pos.coords.longitude;
+            if (gpsText) gpsText.textContent = `GPS: ${currentLatitude.toFixed(4)}, ${currentLongitude.toFixed(4)}`;
+            if (gpsBadge) { gpsBadge.style.background = 'rgba(34, 197, 94, 0.2)'; gpsBadge.style.color = '#86efac'; }
+          },
+          function(err) {
+            console.error(err);
+          },
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      }
+      return;
+    }
+
+    if (!cameraStream || !cameraVideo || cameraVideo.videoWidth <= 0) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nLive selfie capture is unavailable or camera permission was denied. Please ensure your camera is enabled to record your punch.");
+      return;
+    }
+
+    const canvas = document.getElementById('cameraCanvas');
+    canvas.width = cameraVideo.videoWidth;
+    canvas.height = cameraVideo.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+    const photoData = canvas.toDataURL('image/jpeg', 0.85);
+
+    if (!photoData || photoData.length < 50) {
+      alert("Both GPS location and a live selfie are mandatory.\n\nFailed to capture live selfie frame. Please ensure camera preview is active and try again.");
+      return;
+    }
+
+    punchSubmitting = true;
+
+    const inBtn = document.getElementById('empPunchInBtn');
+    const outBtn = document.getElementById('empPunchOutBtn');
+    if (inBtn) { inBtn.disabled = true; inBtn.style.opacity = '0.6'; inBtn.style.cursor = 'not-allowed'; }
+    if (outBtn) { outBtn.disabled = true; outBtn.style.opacity = '0.6'; outBtn.style.cursor = 'not-allowed'; }
+
+    const form = document.getElementById('punchForm');
+    const photoInput = document.getElementById('photoDataInput');
+    const latInput = document.getElementById('latitudeInput');
+    const lonInput = document.getElementById('longitudeInput');
+    const locInput = document.getElementById('locationInput');
+
+    latInput.value = currentLatitude;
+    lonInput.value = currentLongitude;
+    locInput.value = `Lat: ${currentLatitude}, Lon: ${currentLongitude}`;
+    photoInput.value = photoData;
+
+    let hiddenAction = document.createElement('input');
+    hiddenAction.type = 'hidden';
+    hiddenAction.name = 'action';
+    hiddenAction.value = actionType;
+    form.appendChild(hiddenAction);
+    form.submit();
+  }
+
+  function onLeaveCategoryChange() {
+    const categorySelect = document.getElementById('id_leave_type');
+    const dateRangeGroup = document.getElementById('standardDateRangeGroup');
+    const permissionGroup = document.getElementById('permissionFieldsGroup');
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    const panelHeading = document.getElementById('leavePanelHeading');
+    const fromDate = document.getElementById('id_from_date');
+    const toDate = document.getElementById('id_to_date');
+
+    if (!categorySelect) return;
+    const val = categorySelect.value;
+    if (val && val.includes('Permission')) {
+      if (dateRangeGroup) dateRangeGroup.style.display = 'none';
+      if (permissionGroup) permissionGroup.style.display = 'block';
+      if (fromDate) fromDate.required = false;
+      if (toDate) toDate.required = false;
+      if (panelHeading) panelHeading.textContent = 'Request Permission (Up to 2 Hours)';
+      if (submitBtn) submitBtn.textContent = 'Submit Permission Request';
+      calculatePermissionDuration();
+    } else {
+      if (dateRangeGroup) dateRangeGroup.style.display = 'grid';
+      if (permissionGroup) permissionGroup.style.display = 'none';
+      if (fromDate) fromDate.required = true;
+      if (toDate) toDate.required = true;
+      if (panelHeading) panelHeading.textContent = 'Apply for Leave';
+      if (submitBtn) {
+        submitBtn.textContent = 'Submit Leave Application';
+        submitBtn.disabled = false;
+      }
+    }
+  }
+
+  function calculatePermissionDuration() {
+    const fromTime = document.getElementById('permFromTime').value;
+    const toTime = document.getElementById('permToTime').value;
+    const notice = document.getElementById('permDurationNotice');
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    const permDate = document.getElementById('permDateInput').value;
+    const fromDate = document.getElementById('id_from_date');
+    const toDate = document.getElementById('id_to_date');
+
+    if (fromDate && permDate) fromDate.value = permDate;
+    if (toDate && permDate) toDate.value = permDate;
+
+    if (!fromTime || !toTime) return;
+
+    const [fh, fm] = fromTime.split(':').map(Number);
+    const [th, tm] = toTime.split(':').map(Number);
+    const diffMins = (th * 60 + tm) - (fh * 60 + fm);
+    const remainingHours = {{ permission_balance.remaining_hours|default:5.00 }};
+
+    if (diffMins <= 0) {
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = '<span style="color:#ef4444; font-weight: 600;">Invalid time range: End time must be after start time.</span>';
+      }
+      if (submitBtn) submitBtn.disabled = true;
+    } else if (diffMins < 30) {
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = '<span style="color:#ef4444; font-weight: 600;">Minimum allowed duration is 30 minutes.</span>';
+      }
+      if (submitBtn) submitBtn.disabled = true;
+    } else if ((diffMins / 60.0) > remainingHours) {
+      if (notice) {
+        notice.style.display = 'block';
+        notice.innerHTML = `<span style="color:#ef4444; font-weight: 600;">Requested time exceeds remaining permission balance (${remainingHours.toFixed(1)}h remaining).</span>`;
+      }
+      if (submitBtn) submitBtn.disabled = true;
+    } else {
+      if (notice) {
+        notice.style.display = 'none';
+        notice.innerHTML = '';
+      }
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const catSelect = document.getElementById('id_leave_type');
+    if (catSelect) {
+      catSelect.addEventListener('change', onLeaveCategoryChange);
+      onLeaveCategoryChange();
+    }
+  });
+
+  const empWorkInput = document.getElementById('workImageInput');
+  const empWorkPrev = document.getElementById('empWorkImgPreview');
+  if (empWorkInput && empWorkPrev) {
+    empWorkInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          empWorkPrev.src = e.target.result;
+          empWorkPrev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        empWorkPrev.style.display = 'none';
+      }
+    });
+  }
+
+  function openEmpImageModal(url) {
+    document.getElementById('empWorkModalImg').src = url;
+    document.getElementById('empWorkImageModal').classList.add('active');
+  }
+
+  function closeEmpImageModal() {
+    document.getElementById('empWorkImageModal').classList.remove('active');
+  }
+</script>
+
+<!-- Employee Work Image Lightbox Modal -->
+<div class="modal-overlay" id="empWorkImageModal" onclick="closeEmpImageModal()">
+  <div class="modal-card" style="max-width: 760px; background: transparent; box-shadow: none; border: none; text-align: center;" onclick="event.stopPropagation()">
+    <img id="empWorkModalImg" src="" alt="Work Photo" style="max-width: 100%; max-height: 82vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+  </div>
+</div>
+{% endblock %}
