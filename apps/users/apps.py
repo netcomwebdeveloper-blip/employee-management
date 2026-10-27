@@ -4,3 +4,9 @@ class UsersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.users'
     verbose_name = 'User & Access Management'
+
+    def ready(self):
+        try:
+            import apps.users.models  # noqa
+        except ImportError:
+            pass

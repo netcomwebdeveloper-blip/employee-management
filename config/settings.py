@@ -99,6 +99,7 @@ MIDDLEWARE = [
     'apps.users.middleware.CustomCsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'apps.users.middleware.OneDevicePerUserMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

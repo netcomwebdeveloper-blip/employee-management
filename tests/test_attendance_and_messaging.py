@@ -687,3 +687,48 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertEqual(popup.popup_width, '720px')
         self.assertEqual(popup.popup_height, '520px')
 
+    def test_single_device_login_enforcement(self):
+        """
+        Verify that a user can only be logged in on one device at a time.
+        Logging in on a second device automatically logs out the first device
+        with the message: 'Your account has been logged in on another device.'
+        """
+        from django.test import Client
+
+        device_a = Client()
+        device_b = Client()
+
+        # 1. User logs in on Device A
+        login_a = device_a.post('/login/', {
+            'username': 'emp_john',
+            'password': 'john12345'
+        })
+        self.assertEqual(login_a.status_code, 302)
+
+        # Device A accesses dashboard successfully
+        dash_a = device_a.get('/dashboard/')
+        self.assertEqual(dash_a.status_code, 200)
+
+        # 2. Same user logs in on Device B
+        login_b = device_b.post('/login/', {
+            'username': 'emp_john',
+            'password': 'john12345'
+        })
+        self.assertEqual(login_b.status_code, 302)
+
+        # Device B accesses dashboard successfully
+        dash_b = device_b.get('/dashboard/')
+        self.assertEqual(dash_b.status_code, 200)
+
+        # 3. Device A makes a new request -> automatically logged out
+        req_a_after = device_a.get('/dashboard/', follow=True)
+        self.assertEqual(req_a_after.status_code, 200)
+        self.assertContains(req_a_after, "Your account has been logged in on another device.")
+
+        # Verify Device A is indeed unauthenticated
+        self.assertFalse(req_a_after.context['user'].is_authenticated)
+
+        # 4. Device B is still authenticated and works smoothly
+        dash_b_again = device_b.get('/dashboard/')
+        self.assertEqual(dash_b_again.status_code, 200)
+

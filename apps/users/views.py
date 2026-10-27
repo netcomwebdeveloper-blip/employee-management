@@ -23,6 +23,16 @@ def custom_login_view(request):
         if user is not None:
             if user.is_active:
                 login(request, user)
+                if not request.session.session_key:
+                    request.session.save()
+                try:
+                    from apps.users.models import UserActiveSession
+                    UserActiveSession.objects.update_or_create(
+                        user=user,
+                        defaults={'session_key': request.session.session_key}
+                    )
+                except Exception:
+                    pass
                 messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
                 next_url = request.GET.get('next')
                 if next_url:
@@ -38,6 +48,11 @@ def custom_login_view(request):
 def custom_logout_view(request):
     """Secure logout view clearing session and redirecting back to login."""
     if request.user.is_authenticated:
+        try:
+            from apps.users.models import UserActiveSession
+            UserActiveSession.objects.filter(user=request.user, session_key=request.session.session_key).update(session_key=None)
+        except Exception:
+            pass
         logout(request)
         request.session.flush()
         messages.info(request, "You have been logged out successfully.")
