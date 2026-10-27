@@ -73,7 +73,7 @@
 {% endif %}
 
 <!-- Customizable Dashboard Banner Hero -->
-<div class="dashboard-banner-container">
+<div class="dashboard-banner-container" style="{% if active_banner.banner_width %}width: {{ active_banner.banner_width }};{% endif %}{% if active_banner.banner_height %}height: {{ active_banner.banner_height }}; min-height: {{ active_banner.banner_height }};{% endif %}">
   {% if active_banner and active_banner.image %}
   <img src="{{ active_banner.image.url }}" alt="{{ active_banner.title }}" class="dashboard-banner-img">
   {% endif %}
@@ -624,7 +624,7 @@
 </div>
 
 <!-- ================= EMPLOYEE DAILY WORK PLANNING SECTION ================= -->
-<div class="panel" id="dailyWorkPlanningSection" style="margin-top: 24px;">
+<div class="panel" id="dailyWorkPlanningSection" style="display: none !important;" aria-hidden="true">
   <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
     <div>
       <h3>Employee Daily Work Planning</h3>
@@ -756,7 +756,7 @@
 </div>
 
 <!-- ================= EMPLOYEE DETAILS AND LEAVE BALANCE ================= -->
-<div class="panel" style="margin-top: 24px;">
+<div class="panel" id="employeeDetailsSection" style="display: none !important;" aria-hidden="true">
   <div class="panel-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
     <div>
       <h3>Employee Details and Leave Balance</h3>
@@ -899,6 +899,17 @@
             <input type="text" name="banner_title" value="{{ active_banner.title|default:'Netcom Human Resources Portal' }}" class="form-input" placeholder="e.g. Netcom HR Announcement">
           </div>
 
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">Banner Width (e.g. 100% or 1200px)</label>
+              <input type="text" name="banner_width" value="{{ active_banner.banner_width|default:'100%' }}" class="form-input" placeholder="e.g. 100% or 1200px">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">Banner Height (e.g. 185px or 250px)</label>
+              <input type="text" name="banner_height" value="{{ active_banner.banner_height|default:'185px' }}" class="form-input" placeholder="e.g. 185px or 250px">
+            </div>
+          </div>
+
           <div class="form-group">
             <label class="form-label" style="font-weight: 600;">Select New Banner Image</label>
             <input type="file" name="banner_image" accept="image/*" class="form-input" required>
@@ -932,6 +943,17 @@
           <div class="form-group">
             <label class="form-label" style="font-weight: 600;">Popup Description / Caption (Optional)</label>
             <textarea name="popup_description" class="form-input" rows="2" placeholder="Brief caption or instructions...">{{ active_popup.description }}</textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">Popup Width (e.g. 650px or 800px)</label>
+              <input type="text" name="popup_width" value="{{ active_popup.popup_width|default:'650px' }}" class="form-input" placeholder="e.g. 650px or 800px">
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">Popup Height (e.g. auto or 550px)</label>
+              <input type="text" name="popup_height" value="{{ active_popup.popup_height|default:'auto' }}" class="form-input" placeholder="e.g. auto or 550px">
+            </div>
           </div>
 
           <div class="form-group">

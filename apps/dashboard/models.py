@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 class DashboardBanner(models.Model):
     title = models.CharField(max_length=200, default='Corporate Announcement & Updates')
     image = models.ImageField(upload_to='dashboard_banners/')
+    banner_height = models.CharField(max_length=50, default='185px', blank=True)
+    banner_width = models.CharField(max_length=50, default='100%', blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -26,6 +28,8 @@ class DashboardPopup(models.Model):
     title = models.CharField(max_length=200, default='Netcom Corporate Announcement')
     image = models.ImageField(upload_to='dashboard_popups/')
     description = models.TextField(blank=True, default='')
+    popup_width = models.CharField(max_length=50, default='650px', blank=True)
+    popup_height = models.CharField(max_length=50, default='auto', blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

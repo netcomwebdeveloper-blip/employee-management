@@ -120,9 +120,9 @@
 
         {% if request.user.is_superuser or current_profile.role == 'ADMIN' %}
         <div class="nav-label" style="margin-top: 14px;">System Control</div>
-        <a href="/django-admin/" class="nav-link" target="_blank">
+        <a href="{% url 'users:verify_admin_access' %}" class="nav-link" id="djangoAdminNavLink" onclick="return handleAdminNavClick(event)">
           <span class="nav-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </span>
           <span>Django Admin</span>
         </a>
@@ -214,7 +214,7 @@
   {% if active_popup and active_popup.image %}
   <!-- Global Announcement Popup Modal (Displays on login & dashboards, persists on refresh) -->
   <div class="announcement-popup-overlay active" id="globalAnnouncementModal">
-    <div class="announcement-popup-card">
+    <div class="announcement-popup-card" style="{% if active_popup.popup_width %}max-width: {{ active_popup.popup_width }}; width: 100%;{% endif %}">
       <div class="announcement-popup-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 18px;">📢</span>
@@ -223,7 +223,7 @@
         <button type="button" class="modal-close" onclick="closeGlobalAnnouncementModal()" title="Close">&times;</button>
       </div>
       <div class="announcement-popup-body">
-        <img src="{{ active_popup.image.url }}" alt="{{ active_popup.title }}" class="announcement-popup-img">
+        <img src="{{ active_popup.image.url }}" alt="{{ active_popup.title }}" class="announcement-popup-img" style="{% if active_popup.popup_width %}max-width: 100%; width: {{ active_popup.popup_width }};{% endif %}{% if active_popup.popup_height and active_popup.popup_height != 'auto' %}max-height: {{ active_popup.popup_height }}; height: {{ active_popup.popup_height }}; object-fit: contain;{% endif %}">
         {% if active_popup.description %}
         <p style="margin-top: 14px; font-size: 13.5px; color: var(--gray-700); line-height: 1.5; text-align: left;">
           {{ active_popup.description }}
@@ -251,5 +251,122 @@
 
   <script src="{% static 'js/main.js' %}"></script>
   {% block extra_scripts %}{% endblock %}
+
+  <!-- Admin Security Password Verification Modal -->
+  <div class="modal-overlay" id="adminSecurityModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.65); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; width: 92%; max-width: 440px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; border: 1px solid #e2e8f0;">
+      <div style="padding: 18px 22px; background: linear-gradient(135deg, #1e293b, #0f172a); color: #fff; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59,130,246,0.25); display: flex; align-items: center; justify-content: center; color: #60a5fa;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #fff;">Admin Security Gateway</h3>
+            <small style="color: #94a3b8; font-size: 11.5px;">Password Verification Required</small>
+          </div>
+        </div>
+        <button type="button" onclick="closeAdminSecurityModal()" style="background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer;">&times;</button>
+      </div>
+      <form id="adminSecurityForm" onsubmit="submitAdminPassword(event)" style="padding: 22px;">
+        {% csrf_token %}
+        <p style="font-size: 13.5px; color: #475569; margin-bottom: 16px; line-height: 1.45;">
+          Please enter your administrator password to access the <b>Django Admin Panel</b>.
+        </p>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 12.5px; font-weight: 600; color: #334155; margin-bottom: 6px;">Administrator Password</label>
+          <div style="position: relative;">
+            <input type="password" id="adminGatePassword" name="admin_password" class="form-input" placeholder="Enter password" required style="width: 100%; padding: 10px 38px 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px;">
+            <button type="button" onclick="toggleAdminGatePassword()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;" title="Show/Hide Password">
+              <svg id="eyeAdminIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+          <div id="adminGateError" style="display: none; color: #dc2626; font-size: 12.5px; margin-top: 6px; font-weight: 600;"></div>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeAdminSecurityModal()">Cancel</button>
+          <button type="submit" id="adminGateSubmitBtn" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span>Verify & Open Admin Panel</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function handleAdminNavClick(e) {
+      {% if request.session.admin_panel_verified %}
+      window.open('/django-admin/', '_blank');
+      e.preventDefault();
+      return false;
+      {% else %}
+      e.preventDefault();
+      const modal = document.getElementById('adminSecurityModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        const inp = document.getElementById('adminGatePassword');
+        if (inp) { inp.value = ''; inp.focus(); }
+        const err = document.getElementById('adminGateError');
+        if (err) { err.style.display = 'none'; err.innerText = ''; }
+      }
+      return false;
+      {% endif %}
+    }
+
+    function closeAdminSecurityModal() {
+      const modal = document.getElementById('adminSecurityModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function toggleAdminGatePassword() {
+      const inp = document.getElementById('adminGatePassword');
+      if (!inp) return;
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function submitAdminPassword(e) {
+      e.preventDefault();
+      const pwd = document.getElementById('adminGatePassword').value;
+      const btn = document.getElementById('adminGateSubmitBtn');
+      const err = document.getElementById('adminGateError');
+      const csrf = document.querySelector('#adminSecurityForm input[name="csrfmiddlewaretoken"]').value;
+
+      btn.disabled = true;
+      btn.innerText = 'Verifying...';
+      if (err) err.style.display = 'none';
+
+      fetch("{% url 'users:verify_admin_access' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrf
+        },
+        body: 'admin_password=' + encodeURIComponent(pwd) + '&ajax=1'
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerText = 'Verify & Open Admin Panel';
+        if (data.success) {
+          closeAdminSecurityModal();
+          window.open(data.redirect_url || '/django-admin/', '_blank');
+        } else {
+          if (err) {
+            err.innerText = data.error || 'Incorrect administrator password.';
+            err.style.display = 'block';
+          }
+        }
+      })
+      .catch(errObj => {
+        btn.disabled = false;
+        btn.innerText = 'Verify & Open Admin Panel';
+        if (err) {
+          err.innerText = 'Verification failed. Please try again.';
+          err.style.display = 'block';
+        }
+      });
+    }
+  </script>
 </body>
+
 </html>

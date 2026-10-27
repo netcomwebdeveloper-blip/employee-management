@@ -6,9 +6,52 @@ from apps.users.decorators import hr_or_admin_required, admin_required
 from .models import Employee
 from .forms import EmployeeCreateForm, EmployeeUpdateForm
 
+from datetime import timedelta, datetime
+from django.utils import timezone
+from apps.attendance.models import DailyWorkPlan
+
 @login_required
 @hr_or_admin_required
 def employee_list(request):
+    today = timezone.localdate()
+    next_day_date = today + timedelta(days=1)
+
+    # Handle Work Plan assignment from Employee Page
+    if request.method == 'POST' and request.POST.get('action') == 'create_work_plan':
+        emp_id = request.POST.get('employee_id')
+        target_emp = get_object_or_404(Employee, id=emp_id)
+        work_date_str = request.POST.get('work_date')
+        tasks = request.POST.get('tasks', '').strip()
+        plan_title = request.POST.get('title', '').strip() or 'Daily Work Plan & Responsibilities'
+        status_val = request.POST.get('status', 'Assigned')
+        try:
+            work_date = datetime.strptime(work_date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            work_date = next_day_date
+
+        if not tasks:
+            messages.error(request, "Please enter specific tasks or deliverables for the work plan.")
+        else:
+            DailyWorkPlan.objects.create(
+                employee=target_emp,
+                work_date=work_date,
+                title=plan_title,
+                tasks=tasks,
+                status=status_val,
+                assigned_by=request.user
+            )
+            messages.success(request, f"Daily work plan assigned successfully to {target_emp.display_name()} for {work_date.strftime('%B %d, %Y')}!")
+        return redirect('employees:list')
+
+    # Handle Work Plan deletion
+    if request.method == 'POST' and request.POST.get('action') == 'delete_work_plan':
+        plan_id = request.POST.get('plan_id')
+        plan = get_object_or_404(DailyWorkPlan, id=plan_id)
+        emp_name = plan.employee.display_name()
+        plan.delete()
+        messages.success(request, f"Work plan for {emp_name} deleted successfully.")
+        return redirect('employees:list')
+
     query = request.GET.get('q', '').strip()
     role_filter = request.GET.get('role', '')
     dept_filter = request.GET.get('department', '')
@@ -30,6 +73,9 @@ def employee_list(request):
     if dept_filter:
         employees = employees.filter(department_id=dept_filter)
 
+    daily_work_plans = DailyWorkPlan.objects.select_related('employee__user', 'assigned_by').order_by('-work_date', '-created_at')[:40]
+    all_active_employees = Employee.objects.filter(is_active_employee=True).select_related('user', 'department').order_by('employee_code')
+
     from apps.departments.models import Department
     context = {
         'employees': employees,
@@ -38,6 +84,9 @@ def employee_list(request):
         'role_filter': role_filter,
         'dept_filter': dept_filter,
         'total_count': employees.count(),
+        'daily_work_plans': daily_work_plans,
+        'all_active_employees': all_active_employees,
+        'next_day_date': next_day_date,
     }
     return render(request, 'employees/employee_list.html', context)
 

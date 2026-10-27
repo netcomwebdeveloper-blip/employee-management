@@ -105,3 +105,39 @@ def user_profile_view(request):
         'profile': profile,
         'password_form': password_form,
     })
+
+from django.http import JsonResponse
+
+@login_required
+def verify_admin_access(request):
+    """Verifies administrator credentials before allowing access to Django Admin."""
+    is_admin = request.user.is_superuser or request.user.is_staff or (
+        getattr(request.user, 'employee', None) and request.user.employee.role == 'ADMIN'
+    )
+    if not is_admin:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
+            return JsonResponse({'success': False, 'error': 'Access denied: Administrator privileges required.'}, status=403)
+        messages.error(request, 'Access denied: Administrator privileges required.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        admin_password = request.POST.get('admin_password', '').strip()
+        if request.user.check_password(admin_password):
+            request.session['admin_panel_verified'] = True
+            next_url = request.POST.get('next') or request.GET.get('next') or '/django-admin/'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
+                return JsonResponse({'success': True, 'redirect_url': next_url})
+            return redirect(next_url)
+        else:
+            err_msg = 'Invalid administrator password. Access denied.'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
+                return JsonResponse({'success': False, 'error': err_msg}, status=400)
+            messages.error(request, err_msg)
+
+    next_url = request.GET.get('next', '/django-admin/')
+    if request.session.get('admin_panel_verified'):
+        return redirect(next_url)
+
+    return render(request, 'users/admin_verify_password.html', {
+        'next_url': next_url
+    })

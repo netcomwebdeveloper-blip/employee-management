@@ -1,7 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 from apps.users import views as user_views
 
 urlpatterns = [
@@ -22,6 +23,9 @@ urlpatterns = [
     path('payroll/', include('apps.payroll.urls', namespace='payroll')),
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('users/', include('apps.users.urls', namespace='users')),
+
+    # Media files local serving in all environments
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
 
 if settings.DEBUG:

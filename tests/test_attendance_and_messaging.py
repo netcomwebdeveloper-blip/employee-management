@@ -593,3 +593,97 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertIn('spreadsheetml.sheet', resp_all_excel['Content-Type'])
 
         self.client.logout()
+
+    def test_login_page_redesign(self):
+        """Verify modern split-screen login page with logo and illustration."""
+        response = self.client.get('/login/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Welcome Back')
+        self.assertContains(response, 'login-split-card')
+        self.assertContains(response, 'login_illustration.png')
+        self.assertContains(response, 'netcom_brand_logo.png')
+        self.assertContains(response, 'Remember me')
+
+    def test_admin_security_gateway(self):
+        """Verify admin password check before granting Django admin access."""
+        self.client.login(username='NETCOM', password='Netcom@2026@Netcom')
+
+        # 1. Access verify-admin-access page
+        resp_gate = self.client.get('/users/verify-admin-access/')
+        self.assertEqual(resp_gate.status_code, 200)
+        self.assertContains(resp_gate, 'Django Admin Security Gate')
+
+        # 2. Submit wrong password
+        resp_wrong = self.client.post('/users/verify-admin-access/', {
+            'admin_password': 'WrongPassword!',
+            'ajax': '1'
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp_wrong.status_code, 400)
+        self.assertFalse(resp_wrong.json()['success'])
+
+        # 3. Submit correct password
+        resp_correct = self.client.post('/users/verify-admin-access/', {
+            'admin_password': 'Netcom@2026@Netcom',
+            'ajax': '1'
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp_correct.status_code, 200)
+        self.assertTrue(resp_correct.json()['success'])
+        self.assertEqual(resp_correct.json()['redirect_url'], '/django-admin/')
+
+        self.client.logout()
+
+    def test_relocated_sections_on_employees_page(self):
+        """Verify Employee Daily Work Planning and Details sections on /employees/ page."""
+        self.client.login(username='NETCOM', password='Netcom@2026@Netcom')
+
+        # 1. View /employees/ page
+        resp = self.client.get('/employees/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Employee Daily Work Planning')
+        self.assertContains(resp, 'Employee Details and Leave Balance')
+
+        # 2. Assign daily work plan directly from /employees/ page
+        resp_plan = self.client.post('/employees/', {
+            'action': 'create_work_plan',
+            'employee_id': self.emp_profile.id,
+            'work_date': '2026-10-28',
+            'title': 'Feature Sprint Delivery',
+            'tasks': 'Code review and release deployment',
+            'status': 'Assigned'
+        })
+        self.assertEqual(resp_plan.status_code, 302)
+
+        from apps.attendance.models import DailyWorkPlan
+        plan = DailyWorkPlan.objects.filter(employee=self.emp_profile, title='Feature Sprint Delivery').first()
+        self.assertIsNotNone(plan)
+        self.assertEqual(plan.tasks, 'Code review and release deployment')
+
+        self.client.logout()
+
+    def test_manual_sizing_banner_and_popup(self):
+        """Verify manual sizing fields on DashboardBanner and DashboardPopup."""
+        from apps.dashboard.models import DashboardBanner, DashboardPopup
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        fake_image = SimpleUploadedFile("banner.png", b"file_content", content_type="image/png")
+        banner = DashboardBanner.objects.create(
+            title='Resized Banner',
+            image=fake_image,
+            banner_height='220px',
+            banner_width='95%',
+            is_active=True
+        )
+        self.assertEqual(banner.banner_height, '220px')
+        self.assertEqual(banner.banner_width, '95%')
+
+        fake_popup = SimpleUploadedFile("popup.png", b"file_content", content_type="image/png")
+        popup = DashboardPopup.objects.create(
+            title='Resized Notice',
+            image=fake_popup,
+            popup_width='720px',
+            popup_height='520px',
+            is_active=True
+        )
+        self.assertEqual(popup.popup_width, '720px')
+        self.assertEqual(popup.popup_height, '520px')
+

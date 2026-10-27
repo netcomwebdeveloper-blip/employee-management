@@ -6,57 +6,306 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | NETCOM Employee Management Portal</title>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-container-wrapper {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .login-split-card {
+      width: 100%;
+      max-width: 980px;
+      min-height: 600px;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    /* Left Form Column */
+    .login-form-col {
+      flex: 1.05;
+      padding: 48px 46px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      background: #ffffff;
+      z-index: 2;
+    }
+    .login-dots-pattern {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      width: 80px;
+      height: 60px;
+      background-image: radial-gradient(#10b981 1.8px, transparent 1.8px);
+      background-size: 14px 14px;
+      opacity: 0.65;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .login-brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 2;
+    }
+    .login-brand-img {
+      height: 44px;
+      max-width: 52px;
+      object-fit: contain;
+    }
+    .login-brand-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      line-height: 1.25;
+    }
+    .login-brand-subtitle {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .login-heading {
+      font-size: 27px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin: 0 0 6px 0;
+    }
+    .login-subheading {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 28px 0;
+      line-height: 1.5;
+    }
+    .form-group-login {
+      margin-bottom: 20px;
+    }
+    .form-label-login {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 7px;
+    }
+    .form-input-login {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #1e293b;
+      background: #ffffff;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .form-input-login:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+    .password-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .password-toggle-btn:hover {
+      color: #475569;
+    }
+    .login-options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    .remember-me-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #475569;
+      cursor: pointer;
+      user-select: none;
+    }
+    .remember-me-checkbox {
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .btn-login-submit {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+      transition: all 0.2s ease;
+    }
+    .btn-login-submit:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+    }
+    .btn-login-submit:active {
+      transform: translateY(0);
+    }
+    /* Right Illustration Column */
+    .login-illustration-col {
+      flex: 1.15;
+      background: #4f46e5;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .login-illustration-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @media (max-width: 860px) {
+      .login-split-card {
+        flex-direction: column;
+        max-width: 480px;
+        min-height: auto;
+      }
+      .login-illustration-col {
+        height: 220px;
+        order: -1;
+      }
+      .login-form-col {
+        padding: 36px 26px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="auth-wrapper">
-    <div class="auth-card">
-      <div class="auth-header">
-        <img src="{% static 'images/netcom_logo.png' %}" alt="Netcom Logo" style="height: 56px; max-width: 170px; object-fit: contain; margin: 0 auto 12px; display: block;">
-        <h2>Netcom Computers Pvt Ltd</h2>
-        <p>Employee Management Portal</p>
-      </div>
+  <div class="login-container-wrapper">
+    <div class="login-split-card">
+      
+      <!-- Left Column: Modern Sign-In Form Matching Image Mockup -->
+      <div class="login-form-col">
+        <div class="login-dots-pattern" aria-hidden="true"></div>
 
-      {% if messages %}
-      <div class="alert-container">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }}">
-          <span>{{ message }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <form method="POST" action="{% url 'login' %}">
-        {% csrf_token %}
-        <div class="form-group">
-          <label class="form-label" for="id_username">Username</label>
-          <input type="text" name="username" id="id_username" class="form-input" placeholder="Enter username" required autofocus autocomplete="username">
+        <div class="login-brand-header">
+          <img src="{% static 'images/netcom_brand_logo.png' %}" alt="Netcom Logo" class="login-brand-img">
+          <div>
+            <div class="login-brand-title">Netcom Computers</div>
+            <div class="login-brand-subtitle">Private Limited</div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="id_password">Password</label>
-          <input type="password" name="password" id="id_password" class="form-input" placeholder="Enter password" required autocomplete="current-password">
+        <h1 class="login-heading">Welcome Back</h1>
+        <p class="login-subheading">Welcome back! Please enter your details to sign in.</p>
+
+        {% if messages %}
+        <div class="alert-container" style="margin-bottom: 20px;">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }}" style="padding: 10px 14px; font-size: 13px; border-radius: 8px;">
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
         </div>
+        {% endif %}
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px; font-size: 15px;">
-          Sign In to Portal →
-        </button>
-      </form>
+        <form method="POST" action="{% url 'login' %}">
+          {% csrf_token %}
+          <div class="form-group-login">
+            <label class="form-label-login" for="id_username">User Name</label>
+            <input type="text" name="username" id="id_username" class="form-input-login" placeholder="Enter your username" required autofocus autocomplete="username">
+          </div>
 
-      {% if active_popup and active_popup.image %}
-      <div style="text-align: center; margin-top: 14px;">
-        <button type="button" onclick="openLoginPopup()" class="btn btn-outline btn-sm" style="font-size: 12px;">
-          📢 View Netcom Announcement
-        </button>
+          <div class="form-group-login">
+            <label class="form-label-login" for="id_password">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" name="password" id="id_password" class="form-input-login" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 44px;">
+              <button type="button" class="password-toggle-btn" onclick="toggleLoginPassword()" title="Toggle password visibility" aria-label="Toggle password visibility">
+                <svg id="eyeIconSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="login-options-row">
+            <label class="remember-me-label">
+              <input type="checkbox" name="remember_me" class="remember-me-checkbox">
+              <span>Remember me</span>
+            </label>
+            <span style="font-size: 12px; color: #94a3b8;">Protected by Netcom</span>
+          </div>
+
+          <button type="submit" class="btn-login-submit">
+            Login
+          </button>
+        </form>
+
+        {% if active_popup and active_popup.image %}
+        <div style="text-align: center; margin-top: 18px;">
+          <button type="button" onclick="openLoginPopup()" class="btn btn-outline btn-sm" style="font-size: 12px; border-color: #3b82f6; color: #2563eb;">
+            📢 View Netcom Corporate Notice
+          </button>
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
+
+      <!-- Right Column: Businesswoman Illustration Card Matching Image Mockup -->
+      <div class="login-illustration-col">
+        <img src="{% static 'images/login_illustration.png' %}" alt="Workforce Portal Illustration" class="login-illustration-img">
+      </div>
+
     </div>
   </div>
 
   {% if active_popup and active_popup.image %}
   <!-- Login Announcement Popup Modal -->
   <div class="announcement-popup-overlay active" id="loginPopupModal">
-    <div class="announcement-popup-card">
+    <div class="announcement-popup-card" style="{% if active_popup.popup_width %}max-width: {{ active_popup.popup_width }}; width: 100%;{% endif %}">
       <div class="announcement-popup-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 18px;">📢</span>
@@ -65,7 +314,7 @@
         <button type="button" class="modal-close" onclick="closeLoginPopup()" title="Close">&times;</button>
       </div>
       <div class="announcement-popup-body">
-        <img src="{{ active_popup.image.url }}" alt="{{ active_popup.title }}" class="announcement-popup-img">
+        <img src="{{ active_popup.image.url }}" alt="{{ active_popup.title }}" class="announcement-popup-img" style="{% if active_popup.popup_width %}max-width: 100%; width: {{ active_popup.popup_width }};{% endif %}{% if active_popup.popup_height and active_popup.popup_height != 'auto' %}max-height: {{ active_popup.popup_height }}; height: {{ active_popup.popup_height }}; object-fit: contain;{% endif %}">
         {% if active_popup.description %}
         <p style="margin-top: 14px; font-size: 13.5px; color: var(--gray-700); line-height: 1.5; text-align: left;">
           {{ active_popup.description }}
@@ -74,7 +323,7 @@
       </div>
       <div style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end;">
         <button type="button" class="btn btn-primary btn-sm" onclick="closeLoginPopup()">
-          Proceed to Login
+          Proceed to Sign In
         </button>
       </div>
     </div>
@@ -90,5 +339,24 @@
     }
   </script>
   {% endif %}
+
+  <script>
+    function toggleLoginPassword() {
+      const pwdInput = document.getElementById('id_password');
+      const eyeSvg = document.getElementById('eyeIconSvg');
+      if (!pwdInput) return;
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (eyeSvg) {
+          eyeSvg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        }
+      } else {
+        pwdInput.type = 'password';
+        if (eyeSvg) {
+          eyeSvg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+      }
+    }
+  </script>
 </body>
 </html>

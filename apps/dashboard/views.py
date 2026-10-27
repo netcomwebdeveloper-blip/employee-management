@@ -382,11 +382,19 @@ def admin_dashboard(request, profile):
     if request.method == 'POST' and request.POST.get('action') == 'upload_banner':
         banner_file = request.FILES.get('banner_image')
         banner_title = request.POST.get('banner_title', '').strip() or 'Netcom Corporate Updates'
+        banner_height = request.POST.get('banner_height', '').strip() or '185px'
+        if banner_height.isdigit():
+            banner_height = f"{banner_height}px"
+        banner_width = request.POST.get('banner_width', '').strip() or '100%'
+        if banner_width.isdigit():
+            banner_width = f"{banner_width}px"
         if banner_file:
             DashboardBanner.objects.filter(is_active=True).update(is_active=False)
             banner = DashboardBanner.objects.create(
                 title=banner_title,
                 image=banner_file,
+                banner_height=banner_height,
+                banner_width=banner_width,
                 uploaded_by=request.user,
                 is_active=True
             )
@@ -400,12 +408,20 @@ def admin_dashboard(request, profile):
         popup_file = request.FILES.get('popup_image')
         popup_title = request.POST.get('popup_title', '').strip() or 'Netcom Corporate Announcement'
         popup_desc = request.POST.get('popup_description', '').strip()
+        popup_width = request.POST.get('popup_width', '').strip() or '650px'
+        if popup_width.isdigit():
+            popup_width = f"{popup_width}px"
+        popup_height = request.POST.get('popup_height', '').strip() or 'auto'
+        if popup_height.isdigit():
+            popup_height = f"{popup_height}px"
         if popup_file:
             DashboardPopup.objects.filter(is_active=True).update(is_active=False)
             DashboardPopup.objects.create(
                 title=popup_title,
                 image=popup_file,
                 description=popup_desc,
+                popup_width=popup_width,
+                popup_height=popup_height,
                 uploaded_by=request.user,
                 is_active=True
             )
@@ -760,11 +776,19 @@ def hr_dashboard(request, profile):
     if request.method == 'POST' and request.POST.get('action') == 'upload_banner':
         banner_file = request.FILES.get('banner_image')
         banner_title = request.POST.get('banner_title', '').strip() or 'Netcom HR Announcement'
+        banner_height = request.POST.get('banner_height', '').strip() or '185px'
+        if banner_height.isdigit():
+            banner_height = f"{banner_height}px"
+        banner_width = request.POST.get('banner_width', '').strip() or '100%'
+        if banner_width.isdigit():
+            banner_width = f"{banner_width}px"
         if banner_file:
             DashboardBanner.objects.filter(is_active=True).update(is_active=False)
             DashboardBanner.objects.create(
                 title=banner_title,
                 image=banner_file,
+                banner_height=banner_height,
+                banner_width=banner_width,
                 uploaded_by=request.user,
                 is_active=True
             )
@@ -778,12 +802,20 @@ def hr_dashboard(request, profile):
         popup_file = request.FILES.get('popup_image')
         popup_title = request.POST.get('popup_title', '').strip() or 'Netcom HR Announcement'
         popup_desc = request.POST.get('popup_description', '').strip()
+        popup_width = request.POST.get('popup_width', '').strip() or '650px'
+        if popup_width.isdigit():
+            popup_width = f"{popup_width}px"
+        popup_height = request.POST.get('popup_height', '').strip() or 'auto'
+        if popup_height.isdigit():
+            popup_height = f"{popup_height}px"
         if popup_file:
             DashboardPopup.objects.filter(is_active=True).update(is_active=False)
             DashboardPopup.objects.create(
                 title=popup_title,
                 image=popup_file,
                 description=popup_desc,
+                popup_width=popup_width,
+                popup_height=popup_height,
                 uploaded_by=request.user,
                 is_active=True
             )
