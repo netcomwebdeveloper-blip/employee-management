@@ -5,6 +5,20 @@ from django.conf.urls.static import static
 from django.views.static import serve
 from apps.users import views as user_views
 
+import os
+from django.shortcuts import render
+
+def safe_serve_media(request, path, document_root=None, show_indexes=False):
+    root = document_root or settings.MEDIA_ROOT
+    full_path = os.path.join(str(root), path)
+    if not os.path.exists(full_path):
+        return render(request, 'errors/media_not_found.html', {
+            'path': path,
+            'filename': os.path.basename(path)
+        }, status=404)
+    from django.views.static import serve
+    return serve(request, path, document_root=root, show_indexes=show_indexes)
+
 urlpatterns = [
     # Django Administration Backend
     path('django-admin/', admin.site.urls),
@@ -24,8 +38,8 @@ urlpatterns = [
     path('reports/', include('apps.reports.urls', namespace='reports')),
     path('users/', include('apps.users.urls', namespace='users')),
 
-    # Media files local serving in all environments
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    # Safe Media files serving in all environments
+    re_path(r'^media/(?P<path>.*)$', safe_serve_media, {'document_root': settings.MEDIA_ROOT}),
 ]
 
 if settings.DEBUG:

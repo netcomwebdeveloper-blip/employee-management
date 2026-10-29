@@ -582,18 +582,22 @@
           <td>
             {% if att.status == 'Official Duty' or att.is_official_duty %}
             <span class="badge badge-success" style="background: #059669; color: #fff;">Official Duty (Present)</span>
-            {% elif att.status == 'Missing Punch-Out' or att.is_missing_punch_out %}
+            {% elif att.status == 'On Leave' or att.is_approved_leave %}
+            <span class="badge badge-primary">Approved Leave</span>
+            {% elif att.in_time and not att.out_time %}
             <span class="badge badge-danger" style="background: #ef4444; color: #fff; font-weight: 700;">Missing Punch-Out</span>
+            {% elif att.in_time and att.out_time %}
+              {% if att.total_calculated_minutes >= 540 %}
+              <span class="badge badge-success">Present (Full Day)</span>
+              {% elif att.total_calculated_minutes >= 270 %}
+              <span class="badge badge-warning">Half Day (Yellow)</span>
+              {% elif att.approved_permission_minutes > 0 or att.status == 'Permission - 2 Hours' %}
+              <span class="badge badge-permission">Permission – 2 Hours</span>
+              {% else %}
+              <span class="badge badge-danger" style="background: #ef4444; color: #fff; font-weight: 700;">Absent</span>
+              {% endif %}
             {% elif att.status == 'Missed Punch-In' or att.is_missed_punch_in %}
             <span class="badge badge-danger" style="background: #ef4444; color: #fff; font-weight: 700;">Missed Punch-In</span>
-            {% elif att.status == 'Permission - 2 Hours' or att.is_permission %}
-            <span class="badge badge-permission">Permission – 2 Hours</span>
-            {% elif att.status == 'Half Day' %}
-            <span class="badge badge-warning">Half Day (Yellow)</span>
-            {% elif att.status == 'Present' %}
-            <span class="badge badge-success">Present (Full Day)</span>
-            {% elif att.status == 'On Leave' %}
-            <span class="badge badge-primary">Approved Leave</span>
             {% else %}
             <span class="badge badge-danger">{{ att.status }}</span>
             {% endif %}

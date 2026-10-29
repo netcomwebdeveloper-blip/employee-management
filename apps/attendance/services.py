@@ -207,6 +207,18 @@ def reset_daily_missed_punch_in_status(target_date=None):
             )
             updated_count += 1
 
+    # 3. Synchronize completed punch records so status strictly matches calculated working time
+    # (Full-Day: >= 9h, Half-Day: >= 4.5h, < 4.5h: Absent)
+    completed_punches = Attendance.objects.filter(in_time__isnull=False, out_time__isnull=False).exclude(
+        update_source='Official Office Duty'
+    ).exclude(status__in=['Official Duty', 'On Leave'])
+    for cp in completed_punches:
+        calc_status = cp.effective_status
+        if cp.status != calc_status and cp.status not in ('On Leave',):
+            cp.status = calc_status
+            cp.save(update_fields=['status'])
+            updated_count += 1
+
     return updated_count
 
 

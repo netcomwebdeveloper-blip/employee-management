@@ -1761,3 +1761,35 @@ body {
     height: 62px !important;
   }
 }
+
+
+/* Vertical scroll container for Employee Attendance Logs */
+.attendance-logs-scroll-container {
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.attendance-logs-scroll-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.attendance-logs-scroll-container::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.attendance-logs-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.attendance-logs-scroll-container thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc !important;
+  z-index: 5;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}

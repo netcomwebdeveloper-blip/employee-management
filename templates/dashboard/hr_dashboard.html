@@ -292,7 +292,15 @@
             <br><small style="color: #64748b;">{{ att.employee.department.name|default:"General" }}</small>
           </td>
           <td><b>{{ att.date|date:"M d, Y" }}</b></td>
-          <td><span class="badge" style="background: #e0f2fe; color: #0369a1;">{{ att.in_time|time:"H:i" }}</span></td>
+          <td>
+            <button type="button" 
+                    onclick="openGpsModal('Punch In', '{{ att.employee.employee_code }}', '{{ att.employee.display_name|escapejs }}', '{{ att.date|date:'Y-m-d' }}', '{{ att.in_time|time:'H:i:s' }}', '{{ att.in_latitude|default:'' }}', '{{ att.in_longitude|default:'' }}', '{{ att.in_location|escapejs }}', '{% if att.in_photo %}{{ att.in_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-in"
+                    title="Click to view recorded Punch In GPS location">
+              <span style="color: #0369a1; font-weight: 700; text-decoration: underline dotted;">{{ att.in_time|time:"H:i" }}</span>
+              <span style="font-size: 11px;">📍</span>
+            </button>
+          </td>
           <td><span class="badge" style="background: #fee2e2; color: #b91c1c;">Missing Punch-Out</span></td>
           <td>
             <button type="button" onclick="openHrPunchOutCorrectionModal('{{ att.employee.id }}', '{{ att.date|date:'Y-m-d' }}')" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #f87171;">

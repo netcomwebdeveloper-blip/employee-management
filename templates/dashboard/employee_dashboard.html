@@ -397,11 +397,11 @@
     <span class="badge badge-primary" style="border-radius: 8px;">{{ my_attendances|length }} Log(s)</span>
   </div>
 
-  <div class="table-responsive" style="border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+  <div class="table-responsive attendance-logs-scroll-container" style="max-height: 380px; overflow-y: auto; overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0;">
     <table class="data-table" style="margin: 0;">
       <thead>
-        <tr style="background: #f8fafc;">
-          <th>Date</th>
+        <tr style="background: #f8fafc; position: sticky; top: 0; z-index: 5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <th style="background: #f8fafc;">Date</th>
           <th>Punch In</th>
           <th>Punch Out</th>
           <th>Location / GPS</th>
@@ -485,18 +485,22 @@
           <td>
             {% if a.is_official_duty or a.update_source == 'Official Office Duty' or a.leave_type == 'Official Duty' %}
             <span class="badge badge-success" style="background:#16a34a; color:#fff; font-weight:700;">Official Duty (Present)</span>
-            {% elif a.status == 'Permission - 2 Hours' or a.is_permission %}
-            <span class="badge badge-permission">Permission – 2 Hours</span>
-            {% elif a.status == 'Half Day' %}
-            <span class="badge badge-warning">Half Day</span>
-            {% elif a.status == 'Present' %}
-            <span class="badge badge-success">Present (Full Day)</span>
-            {% elif a.status == 'On Leave' %}
+            {% elif a.status == 'On Leave' or a.is_approved_leave %}
             <span class="badge badge-primary">Approved Leave</span>
+            {% elif a.in_time and not a.out_time %}
+            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">🔴 Missing Punch-Out</span>
+            {% elif a.in_time and a.out_time %}
+              {% if a.total_calculated_minutes >= 540 %}
+              <span class="badge badge-success">Present (Full Day)</span>
+              {% elif a.total_calculated_minutes >= 270 %}
+              <span class="badge badge-warning">Half Day</span>
+              {% elif a.approved_permission_minutes > 0 or a.status == 'Permission - 2 Hours' %}
+              <span class="badge badge-permission">Permission – 2 Hours</span>
+              {% else %}
+              <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">Absent</span>
+              {% endif %}
             {% elif a.status == 'Missed Punch-In' %}
             <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">🔴 Missed Punch-In</span>
-            {% elif a.status == 'Missing Punch-Out' %}
-            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">🔴 Missing Punch-Out</span>
             {% elif a.status == 'Absent' %}
             <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">Absent</span>
             {% else %}
@@ -563,16 +567,13 @@
 
 {% block extra_scripts %}
 <script>
-  // 1. Automatic Announcement Popup Display on Employee Dashboard Entry
+  // 1. Automatic Announcement Popup Display on Every Refresh / Load
   const bannerId = "{{ active_banner.id|default:'0' }}";
   function checkAndShowAnnouncementPopup() {
     {% if active_banner and active_banner.image %}
     const modal = document.getElementById('employeeAnnouncementModal');
     if (modal) {
-      const isDismissed = sessionStorage.getItem('dismissed_banner_' + bannerId);
-      if (!isDismissed) {
-        modal.classList.add('active');
-      }
+      modal.classList.add('active');
     }
     {% endif %}
   }
@@ -586,7 +587,6 @@
     const modal = document.getElementById('employeeAnnouncementModal');
     if (modal) {
       modal.classList.remove('active');
-      sessionStorage.setItem('dismissed_banner_' + bannerId, 'true');
     }
   }
 

@@ -183,6 +183,35 @@ class Attendance(models.Model):
         """Up to 2 hours of approved permission."""
         return self.approved_permission_minutes > 0 or self.status == 'Permission - 2 Hours'
 
+    @property
+    def effective_status(self):
+        """
+        Determines the strictly validated business status:
+        - Full-Day Requirement: Exactly 9 hours (>= 540 mins) of calculated working time.
+        - Half-Day Requirement: Exactly 4 hours and 30 minutes (>= 270 mins and < 540 mins).
+        - Permission Hours: Minimum 30 mins, up to maximum 2 hours per day.
+          Total Calculated Time = Actual Working Time (Punch Out - Punch In) + Approved Permission Hours.
+          Exclusions: Pending or rejected permissions MUST NOT be added.
+        - Less than 4.5 hours is Absent.
+        """
+        if self.is_official_duty or self.update_source == 'Official Office Duty' or self.leave_type == 'Official Duty':
+            return 'Official Duty'
+        if self.status == 'On Leave' or self.is_approved_leave:
+            return 'On Leave'
+        if self.in_time and not self.out_time:
+            return 'Missing Punch-Out'
+        if self.in_time and self.out_time:
+            mins = self.total_calculated_minutes
+            if mins >= 540:
+                return 'Present'
+            elif mins >= 270:
+                return 'Half Day'
+            elif self.approved_permission_minutes > 0 or self.status == 'Permission - 2 Hours':
+                return 'Permission - 2 Hours'
+            else:
+                return 'Absent'
+        return self.status
+
     def save(self, *args, **kwargs):
         # Sync permission duration from approved permission if exists
         perm_mins = self.get_approved_permission_minutes()
@@ -205,6 +234,8 @@ class Attendance(models.Model):
                 self.status = 'Present'
             elif mins >= 270:
                 self.status = 'Half Day'
+            elif self.approved_permission_minutes > 0 or self.status == 'Permission - 2 Hours':
+                self.status = 'Permission - 2 Hours'
             else:
                 self.status = 'Absent'
         elif self.in_time and not self.out_time:
