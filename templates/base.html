@@ -206,6 +206,36 @@
         </div>
         {% endif %}
 
+                <!-- Top Quick Navigation Bar (Employee Dashboard, HR Support, Leave Management, and Profile) -->
+        {% if request.user.is_authenticated and current_profile %}
+        <nav class="employee-top-nav-bar" aria-label="Content Quick Navigation">
+          <a href="{% url 'dashboard:index' %}" class="top-nav-pill {% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name != 'hr_support' and request.resolver_match.url_name != 'connect_hr' and request.resolver_match.url_name != 'hr_dashboard' and request.resolver_match.url_name != 'admin_dashboard' %}active{% endif %}">
+            <span class="pill-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </span>
+            <span>Employee Dashboard</span>
+          </a>
+          <a href="{% url 'dashboard:hr_support' %}" class="top-nav-pill {% if request.resolver_match.url_name == 'hr_support' or request.resolver_match.url_name == 'connect_hr' %}active{% endif %}">
+            <span class="pill-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </span>
+            <span>HR Support</span>
+          </a>
+          <a href="{% url 'leave_management:list' %}" class="top-nav-pill {% if request.resolver_match.app_name == 'leave_management' %}active{% endif %}">
+            <span class="pill-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </span>
+            <span>Leave Management</span>
+          </a>
+          <a href="{% url 'users:profile' %}" class="top-nav-pill {% if request.resolver_match.app_name == 'users' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+            <span class="pill-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </span>
+            <span>Profile</span>
+          </a>
+        </nav>
+        {% endif %}
+
         {% block content %}{% endblock %}
       </main>
     </div>
