@@ -1,4 +1,6 @@
+import re
 from datetime import datetime, timedelta
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -71,17 +73,81 @@ class Attendance(models.Model):
         return bool(not self.in_time and self.status in ('Missed Punch-In', 'Absent'))
 
     @property
-    def total_work_minutes(self):
-        # Do not calculate working hours for incomplete attendance
-        if self.is_official_duty:
-            return 540  # Full 9 hours for official office duty
+    def actual_work_minutes(self):
+        """Actual recorded working time in minutes between punch in and punch out."""
         if not self.in_time or not self.out_time or self.is_missing_punch_out:
             return 0
-        start = datetime.combine(self.date, self.in_time)
-        end = datetime.combine(self.date, self.out_time)
-        if end < start:
-            end += timedelta(days=1)
-        return int((end - start).total_seconds() // 60)
+        try:
+            start = datetime.combine(self.date, self.in_time)
+            end = datetime.combine(self.date, self.out_time)
+            if end < start:
+                end += timedelta(days=1)
+            diff = (end - start).total_seconds() // 60
+            return max(0, int(diff))
+        except Exception:
+            return 0
+
+    def get_approved_permission_minutes(self):
+        """
+        Calculates approved permission time in minutes (minimum 30 mins, maximum 120 mins).
+        Pending, rejected, or cancelled permissions MUST NOT be added.
+        """
+        from apps.leave_management.models import LeaveRequest
+        try:
+            perm_requests = LeaveRequest.objects.filter(
+                employee=self.employee,
+                from_date=self.date,
+                leave_type__in=['Permission', 'Permission (Up to 2 Hours)']
+            )
+            approved_leave = perm_requests.filter(status='Approved').first()
+            if approved_leave:
+                dur_hm = re.search(r'\((\d+)h\s*(\d*)m?\)', approved_leave.reason or '')
+                dur_match = re.search(r'\((\d+)\s*mins?\)', approved_leave.reason or '')
+                if dur_hm:
+                    h_val = int(dur_hm.group(1))
+                    m_val = int(dur_hm.group(2)) if dur_hm.group(2) else 0
+                    mins = h_val * 60 + m_val
+                elif dur_match:
+                    mins = int(dur_match.group(1))
+                elif self.permission_hours and self.permission_hours > 0:
+                    mins = int(float(self.permission_hours) * 60)
+                else:
+                    mins = 120
+                return max(30, min(120, mins))
+
+            # Exclude pending/rejected/cancelled permission requests
+            if perm_requests.exists():
+                return 0
+        except Exception:
+            pass
+
+        # Standalone Attendance permission flag (only if explicitly approved)
+        if self.is_permission and self.permission_hours and self.permission_hours > 0:
+            mins = int(float(self.permission_hours) * 60)
+            return max(30, min(120, mins))
+
+        return 0
+
+    @property
+    def approved_permission_minutes(self):
+        return self.get_approved_permission_minutes()
+
+    @property
+    def total_calculated_minutes(self):
+        """
+        Total Calculated Time = Actual Working Time (Punch Out - Punch In) + Approved Permission Hours.
+        Official duty is credited with 9 full hours (540 mins).
+        Pending or rejected permissions MUST NOT be added.
+        """
+        if self.is_official_duty:
+            return 540
+        if not self.in_time or not self.out_time or self.is_missing_punch_out:
+            return 0
+        return self.actual_work_minutes + self.approved_permission_minutes
+
+    @property
+    def total_work_minutes(self):
+        return self.total_calculated_minutes
 
     @property
     def total_work_time(self):
@@ -91,7 +157,7 @@ class Attendance(models.Model):
             return "Incomplete (Missing Punch-Out)"
         if not self.in_time or not self.out_time:
             return "-"
-        mins = self.total_work_minutes
+        mins = self.total_calculated_minutes
         hours = mins // 60
         rem = mins % 60
         return f"{hours}h {rem}m"
@@ -103,40 +169,48 @@ class Attendance(models.Model):
             return True
         if self.is_missing_punch_out or not self.out_time:
             return False
-        return self.total_work_minutes >= 540 or self.status == 'Present'
+        return self.total_calculated_minutes >= 540
 
     @property
     def is_half_day(self):
         """4 hours and 30 minutes (>= 270 mins and < 540 mins) count as a half working day."""
         if self.is_official_duty or self.is_missing_punch_out or not self.out_time:
             return False
-        if self.status == 'Half Day':
-            return True
-        return 270 <= self.total_work_minutes < 540
+        return 270 <= self.total_calculated_minutes < 540
 
     @property
     def is_permission_approved(self):
         """Up to 2 hours of approved permission."""
-        return self.is_permission or self.status == 'Permission - 2 Hours'
+        return self.approved_permission_minutes > 0 or self.status == 'Permission - 2 Hours'
 
     def save(self, *args, **kwargs):
+        # Sync permission duration from approved permission if exists
+        perm_mins = self.get_approved_permission_minutes()
+        if perm_mins > 0:
+            self.is_permission = True
+            self.permission_hours = Decimal(str(round(perm_mins / 60.0, 2)))
+        elif not self.is_permission:
+            self.permission_hours = Decimal('0.00')
+
         # Official duty automatically Present
         if self.is_official_duty:
             self.status = 'Present'
             self.is_approved_leave = False
-        # Auto-compute status when punch in & out are present and not manually overridden
+        elif self.status == 'On Leave' or self.is_approved_leave:
+            self.is_approved_leave = True
+        # Auto-compute status when punch in & out are present
         elif self.in_time and self.out_time:
-            if not self.is_permission and self.status not in ('Permission - 2 Hours', 'On Leave'):
-                mins = self.total_work_minutes
-                if mins >= 540:
-                    self.status = 'Present'
-                elif mins >= 270:
-                    self.status = 'Half Day'
-                elif self.status == 'Missing Punch-Out':
-                    self.status = 'Present'
+            mins = self.total_calculated_minutes
+            if mins >= 540:
+                self.status = 'Present'
+            elif mins >= 270:
+                self.status = 'Half Day'
+            else:
+                self.status = 'Absent'
         elif self.in_time and not self.out_time:
-            if self.status not in ('Permission - 2 Hours', 'On Leave'):
+            if self.status not in ('On Leave',):
                 self.status = 'Missing Punch-Out'
+
         if self.status == 'Permission - 2 Hours':
             self.is_permission = True
             if not self.permission_hours or self.permission_hours == 0:

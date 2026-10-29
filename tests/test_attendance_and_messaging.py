@@ -454,7 +454,7 @@ class AttendanceAndMessagingTests(TestCase):
 
         att = Attendance.objects.get(employee=self.emp_profile, date=target_date)
         self.assertTrue(att.is_permission)
-        self.assertEqual(att.permission_hours, Decimal('2.00'))
+        self.assertEqual(att.permission_hours, Decimal('1.50'))
 
         # Verify audit log
         audit = AttendanceAuditLog.objects.filter(attendance=att, action='PERMISSION_APPROVED').first()
@@ -732,3 +732,260 @@ class AttendanceAndMessagingTests(TestCase):
         dash_b_again = device_b.get('/dashboard/')
         self.assertEqual(dash_b_again.status_code, 200)
 
+
+
+class AttendanceCalculationAndLoginUpgradeTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.dept = Department.objects.create(name='Technology', code='TECH')
+        self.desig = Designation.objects.create(department=self.dept, title='Software Engineer')
+
+        # Employee
+        self.emp_user = User.objects.create_user('emp_test_calc', 'calc@example.com', 'testpwd123')
+        self.employee = Employee.objects.create(
+            user=self.emp_user,
+            employee_code='EMP999',
+            role='EMPLOYEE',
+            department=self.dept,
+            designation=self.desig,
+            basic_salary=Decimal('40000.00'),
+            casual_leave_balance=2,
+            joining_date=date(2026, 1, 1)
+        )
+
+        # HR
+        self.hr_user = User.objects.create_user('hr_test_calc', 'hrcalc@example.com', 'hrpwd123')
+        self.hr_profile = Employee.objects.create(
+            user=self.hr_user,
+            employee_code='HR999',
+            role='HR',
+            department=self.dept,
+            designation=self.desig,
+            casual_leave_balance=5
+        )
+
+    def test_short_session_38_minutes_is_absent_not_present(self):
+        """Edge case from screenshot: 38 minutes punch must be Absent, never Present."""
+        d = date(2026, 10, 29)
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(13, 44, 10),
+            out_time=time(14, 22, 24)
+        )
+        self.assertEqual(att.actual_work_minutes, 38)
+        self.assertEqual(att.total_calculated_minutes, 38)
+        self.assertEqual(att.status, 'Absent')
+        self.assertFalse(att.is_full_day)
+        self.assertFalse(att.is_half_day)
+
+    def test_full_day_9_hours_requirement(self):
+        """Full day requires exactly 9 hours (540 mins) or more."""
+        d = date(2026, 10, 20)
+        # Exactly 9 hours: 09:00 to 18:00
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(9, 0),
+            out_time=time(18, 0)
+        )
+        self.assertEqual(att.total_calculated_minutes, 540)
+        self.assertEqual(att.status, 'Present')
+        self.assertTrue(att.is_full_day)
+        self.assertFalse(att.is_half_day)
+
+    def test_half_day_4_hours_30_minutes_requirement(self):
+        """Half day requires at least 4 hours 30 mins (270 mins) but less than 9 hours (540 mins)."""
+        d = date(2026, 10, 21)
+        # Exactly 4 hours 30 mins: 09:00 to 13:30
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(9, 0),
+            out_time=time(13, 30)
+        )
+        self.assertEqual(att.total_calculated_minutes, 270)
+        self.assertEqual(att.status, 'Half Day')
+        self.assertFalse(att.is_full_day)
+        self.assertTrue(att.is_half_day)
+
+        # 4 hours 29 mins -> Absent (< 270 mins)
+        d2 = date(2026, 10, 22)
+        att2 = Attendance.objects.create(
+            employee=self.employee,
+            date=d2,
+            in_time=time(9, 0),
+            out_time=time(13, 29)
+        )
+        self.assertEqual(att2.total_calculated_minutes, 269)
+        self.assertEqual(att2.status, 'Absent')
+
+    def test_approved_permission_formula_working_time_plus_permission(self):
+        """
+        Total Calculated Time = Actual Working Time (Punch Out - Punch In) + Approved Permission Hours.
+        7h actual work + 2h approved permission = 9h -> Present (Full Day).
+        """
+        d = date(2026, 10, 23)
+        # Approved 2-hour permission
+        LeaveRequest.objects.create(
+            employee=self.employee,
+            leave_type='Permission (Up to 2 Hours)',
+            from_date=d,
+            to_date=d,
+            reason='Permission: 09:00 AM to 11:00 AM (2h 0m) — Doctor visit',
+            status='Approved',
+            approval_type='Permission (2h 0m)'
+        )
+
+        # Actual work: 11:00 AM to 06:00 PM (7 hours = 420 mins)
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(11, 0),
+            out_time=time(18, 0)
+        )
+        self.assertEqual(att.actual_work_minutes, 420)
+        self.assertEqual(att.approved_permission_minutes, 120)
+        self.assertEqual(att.total_calculated_minutes, 540) # 420 + 120 = 540 (9 hours)
+        self.assertEqual(att.status, 'Present')
+        self.assertTrue(att.is_full_day)
+
+    def test_half_day_with_approved_permission(self):
+        """3.5 hours work + 1 hour approved permission = 4.5 hours -> Half Day."""
+        d = date(2026, 10, 24)
+        LeaveRequest.objects.create(
+            employee=self.employee,
+            leave_type='Permission (Up to 2 Hours)',
+            from_date=d,
+            to_date=d,
+            reason='Permission: 09:00 AM to 10:00 AM (1h 0m) — Bank work',
+            status='Approved',
+            approval_type='Permission (1h 0m)'
+        )
+
+        # 3.5 hours actual work = 210 mins
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(10, 0),
+            out_time=time(13, 30)
+        )
+        self.assertEqual(att.actual_work_minutes, 210)
+        self.assertEqual(att.approved_permission_minutes, 60)
+        self.assertEqual(att.total_calculated_minutes, 270) # 210 + 60 = 270 mins (4.5 hours)
+        self.assertEqual(att.status, 'Half Day')
+        self.assertTrue(att.is_half_day)
+
+    def test_pending_permission_strictly_excluded_from_working_time(self):
+        """Pending permission MUST NOT be added to working time."""
+        d = date(2026, 10, 25)
+        # Pending 2-hour permission
+        LeaveRequest.objects.create(
+            employee=self.employee,
+            leave_type='Permission (Up to 2 Hours)',
+            from_date=d,
+            to_date=d,
+            reason='Permission: 09:00 AM to 11:00 AM (2h 0m) — Personal',
+            status='Pending'
+        )
+
+        # 7 hours work = 420 mins. Without permission approved, 420 < 540 -> Half Day!
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(11, 0),
+            out_time=time(18, 0)
+        )
+        self.assertEqual(att.approved_permission_minutes, 0) # Excluded!
+        self.assertEqual(att.total_calculated_minutes, 420)
+        self.assertEqual(att.status, 'Half Day') # Not Present!
+
+    def test_rejected_permission_strictly_excluded_from_working_time(self):
+        """Rejected permission MUST NOT be added to working time."""
+        d = date(2026, 10, 26)
+        LeaveRequest.objects.create(
+            employee=self.employee,
+            leave_type='Permission (Up to 2 Hours)',
+            from_date=d,
+            to_date=d,
+            reason='Permission: 09:00 AM to 11:00 AM (2h 0m) — Personal',
+            status='Rejected',
+            rejection_reason='Not allowed'
+        )
+
+        att = Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(11, 0),
+            out_time=time(18, 0)
+        )
+        self.assertEqual(att.approved_permission_minutes, 0)
+        self.assertEqual(att.total_calculated_minutes, 420)
+        self.assertEqual(att.status, 'Half Day')
+
+    def test_permission_duration_boundaries_validation(self):
+        """Permission request must enforce minimum 30 minutes and maximum 2 hours."""
+        self.client.force_login(self.emp_user)
+        # Less than 30 mins (20 mins): 09:00 to 09:20 -> Should be rejected
+        resp_too_short = self.client.post('/leave/', {
+            'leave_type': 'Permission (Up to 2 Hours)',
+            'permission_date': '2026-11-01',
+            'from_time': '09:00',
+            'to_time': '09:20',
+            'reason': 'Quick coffee'
+        }, follow=True)
+        self.assertContains(resp_too_short, "Minimum allowed duration is 30 minutes")
+
+        # More than 2 hours (2.5h / 150 mins): 09:00 to 11:30 -> Should be rejected
+        resp_too_long = self.client.post('/leave/', {
+            'leave_type': 'Permission (Up to 2 Hours)',
+            'permission_date': '2026-11-02',
+            'from_time': '09:00',
+            'to_time': '11:30',
+            'reason': 'Extended personal task'
+        }, follow=True)
+        self.assertContains(resp_too_long, "Maximum allowed duration is 2 hours")
+
+    def test_attendance_logs_ui_and_gps_data_rendering(self):
+        """Attendance logs table renders clickable punch buttons and GPS data without errors."""
+        self.client.force_login(self.hr_user)
+        d = date(2026, 10, 27)
+        Attendance.objects.create(
+            employee=self.employee,
+            date=d,
+            in_time=time(9, 15, 0),
+            out_time=time(18, 15, 0),
+            in_latitude=Decimal('8.725100'),
+            in_longitude=Decimal('77.730100'),
+            in_location='Netcom HQ Office',
+            out_latitude=Decimal('8.725200'),
+            out_longitude=Decimal('77.730200'),
+            out_location='Netcom Gate Exit',
+            update_source='Employee Punch (GPS/Selfie)'
+        )
+
+        resp = self.client.get('/attendance/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'openGpsModal')
+        self.assertContains(resp, '8.7251')
+        self.assertContains(resp, '77.7301')
+        self.assertContains(resp, '8.7252')
+        self.assertContains(resp, '77.7302')
+
+    def test_login_page_redesign_full_viewport_and_separate_elements(self):
+        """Login page must occupy full viewport 100vh/100vw, with separate HTML elements and illustration."""
+        resp = self.client.get('/login/')
+        self.assertEqual(resp.status_code, 200)
+        # Separate HTML form elements
+        self.assertContains(resp, 'Welcome Back')
+        self.assertContains(resp, 'Please enter your details to sign in')
+        self.assertContains(resp, 'name="username"')
+        self.assertContains(resp, 'name="password"')
+        self.assertContains(resp, 'name="remember_me"')
+        self.assertContains(resp, 'csrfmiddlewaretoken')
+        # Viewport styles
+        self.assertContains(resp, 'width: 100vw')
+        self.assertContains(resp, 'height: 100vh')
+        # Illustration PNG referenced as adjacent asset
+        self.assertContains(resp, 'login_illustration.png')
+        self.assertContains(resp, 'login-right-panel')

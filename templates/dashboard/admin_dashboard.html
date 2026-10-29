@@ -528,12 +528,24 @@
           <td>{{ att.date|date:"Y-m-d (D)" }}</td>
           <td>
             {% if att.in_time %}
-            <span style="color: var(--success); font-weight: 600;">{{ att.in_time|time:"H:i:s" }}</span>
+            <button type="button" 
+                    onclick="openGpsModal('Punch In', '{{ att.employee.employee_code }}', '{{ att.employee.display_name|escapejs }}', '{{ att.date|date:'Y-m-d' }}', '{{ att.in_time|time:'H:i:s' }}', '{{ att.in_latitude|default:'' }}', '{{ att.in_longitude|default:'' }}', '{{ att.in_location|escapejs }}', '{% if att.in_photo %}{{ att.in_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-in"
+                    title="Click to view recorded Punch In GPS details">
+              <span style="color: var(--success); font-weight: 700; text-decoration: underline dotted;">{{ att.in_time|time:"H:i:s" }}</span>
+              <span style="font-size: 11px;">📍</span>
+            </button>
             {% else %}-{% endif %}
           </td>
           <td>
             {% if att.out_time %}
-            <span style="color: var(--danger); font-weight: 600;">{{ att.out_time|time:"H:i:s" }}</span>
+            <button type="button" 
+                    onclick="openGpsModal('Punch Out', '{{ att.employee.employee_code }}', '{{ att.employee.display_name|escapejs }}', '{{ att.date|date:'Y-m-d' }}', '{{ att.out_time|time:'H:i:s' }}', '{{ att.out_latitude|default:'' }}', '{{ att.out_longitude|default:'' }}', '{{ att.out_location|escapejs }}', '{% if att.out_photo %}{{ att.out_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-out"
+                    title="Click to view recorded Punch Out GPS details">
+              <span style="color: var(--danger); font-weight: 700; text-decoration: underline dotted;">{{ att.out_time|time:"H:i:s" }}</span>
+              <span style="font-size: 11px;">📍</span>
+            </button>
             {% elif att.in_time and not att.out_time %}
             <span class="badge badge-danger" style="background: #fee2e2; color: #ef4444; font-size: 11px;">Missing</span>
             {% else %}-{% endif %}

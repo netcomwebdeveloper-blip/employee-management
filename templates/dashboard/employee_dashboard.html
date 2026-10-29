@@ -56,7 +56,13 @@
         <div class="punch-card-label">PUNCH-IN-TIME</div>
         <span class="punch-stat-label" style="display: none;">Punch-In Time</span>
         {% if attendance.in_time %}
-        <div class="punch-card-main-val punch-stat-value" style="color: #16a34a;">{{ attendance.in_time|time:"h:i A" }}</div>
+        <button type="button" 
+                onclick="openGpsModal('Punch In', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ today|date:'Y-m-d' }}', '{{ attendance.in_time|time:'H:i:s' }}', '{{ attendance.in_latitude|default:'' }}', '{{ attendance.in_longitude|default:'' }}', '{{ attendance.in_location|escapejs }}', '{% if attendance.in_photo %}{{ attendance.in_photo.url }}{% endif %}')"
+                style="background:none; border:none; padding:0; cursor:pointer; text-align:left; display:inline-flex; align-items:center; gap:6px;" 
+                title="Click to view recorded Punch In GPS details">
+          <span class="punch-card-main-val punch-stat-value" style="color: #16a34a; text-decoration: underline dotted;">{{ attendance.in_time|time:"h:i A" }}</span>
+          <span style="font-size: 14px;">📍</span>
+        </button>
         {% elif attendance.status == 'Missed Punch-In' or has_missed_punch_in %}
         <div class="punch-card-main-val punch-stat-value" style="color: #dc2626;">Missed Punch-In</div>
         {% else %}
@@ -79,7 +85,13 @@
         <div class="punch-card-label">PUNCH-OUT-TIME</div>
         <span class="punch-stat-label" style="display: none;">Punch-Out Time</span>
         {% if attendance.out_time %}
-        <div class="punch-card-main-val punch-stat-value" style="color: #ef4444;">{{ attendance.out_time|time:"h:i A" }}</div>
+        <button type="button" 
+                onclick="openGpsModal('Punch Out', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ today|date:'Y-m-d' }}', '{{ attendance.out_time|time:'H:i:s' }}', '{{ attendance.out_latitude|default:'' }}', '{{ attendance.out_longitude|default:'' }}', '{{ attendance.out_location|escapejs }}', '{% if attendance.out_photo %}{{ attendance.out_photo.url }}{% endif %}')"
+                style="background:none; border:none; padding:0; cursor:pointer; text-align:left; display:inline-flex; align-items:center; gap:6px;" 
+                title="Click to view recorded Punch Out GPS details">
+          <span class="punch-card-main-val punch-stat-value" style="color: #ef4444; text-decoration: underline dotted;">{{ attendance.out_time|time:"h:i A" }}</span>
+          <span style="font-size: 14px;">📍</span>
+        </button>
         {% else %}
         <div class="punch-card-main-val punch-stat-value" style="color: #64748b; letter-spacing: 2px;">-----------</div>
         {% endif %}
@@ -363,6 +375,136 @@
         <tr>
           <td colspan="5" style="text-align: center; color: #94a3b8; padding: 32px 20px;">
             No daily work plans assigned yet. Check back when HR assigns your next tasks!
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- My Attendance Logs Section (Click Punch In/Out to view GPS Location) -->
+<div class="modern-surface-card" id="myAttendanceLogsSection" style="margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+    <div>
+      <h3 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">My Attendance Logs</h3>
+      <p style="font-size: 13px; color: #64748b; margin: 0;">Click on any Punch In or Punch Out time to inspect your recorded GPS location</p>
+    </div>
+    <span class="badge badge-primary" style="border-radius: 8px;">{{ my_attendances|length }} Log(s)</span>
+  </div>
+
+  <div class="table-responsive" style="border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+    <table class="data-table" style="margin: 0;">
+      <thead>
+        <tr style="background: #f8fafc;">
+          <th>Date</th>
+          <th>Punch In</th>
+          <th>Punch Out</th>
+          <th>Location / GPS</th>
+          <th>Duration</th>
+          <th>Attendance Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in my_attendances %}
+        <tr>
+          <td style="white-space: nowrap;">
+            <b>{{ a.date|date:"M d, Y (D)" }}</b>
+            {% if a.date == today %}
+            <span class="badge badge-success" style="font-size: 10px; margin-left: 4px; border-radius: 4px;">Today</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.in_time %}
+            <button type="button" 
+                    onclick="openGpsModal('Punch In', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.in_time|time:'H:i:s' }}', '{{ a.in_latitude|default:'' }}', '{{ a.in_longitude|default:'' }}', '{{ a.in_location|escapejs }}', '{% if a.in_photo %}{{ a.in_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-in"
+                    title="Click to view recorded Punch In GPS location">
+              <span style="color: var(--success); font-weight: 700; text-decoration: underline dotted;">{{ a.in_time|time:"h:i A" }}</span>
+              <span style="font-size: 11px;">📍</span>
+            </button>
+            {% elif a.status == 'Missed Punch-In' %}
+            <span style="color: #dc2626; font-weight: 700;">Missing</span>
+            {% else %}
+            <small style="color: var(--gray-600);">-</small>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.out_time %}
+            <button type="button" 
+                    onclick="openGpsModal('Punch Out', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.out_time|time:'H:i:s' }}', '{{ a.out_latitude|default:'' }}', '{{ a.out_longitude|default:'' }}', '{{ a.out_location|escapejs }}', '{% if a.out_photo %}{{ a.out_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-out"
+                    title="Click to view recorded Punch Out GPS location">
+              <span style="color: var(--danger); font-weight: 700; text-decoration: underline dotted;">{{ a.out_time|time:"h:i A" }}</span>
+              <span style="font-size: 11px;">📍</span>
+            </button>
+            {% elif a.in_time %}
+            <span style="color: #dc2626; font-weight: 700; background: #fee2e2; padding: 2px 8px; border-radius: 4px; border: 1px solid #ef4444;" title="Punch-out missing. Contact HR for manual update.">Missing</span>
+            {% else %}
+            <small style="color: var(--gray-600);">-</small>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.in_latitude and a.in_longitude %}
+            <button type="button" 
+                    onclick="openGpsModal('Punch In', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.in_time|time:'H:i:s' }}', '{{ a.in_latitude|default:'' }}', '{{ a.in_longitude|default:'' }}', '{{ a.in_location|escapejs }}', '{% if a.in_photo %}{{ a.in_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-in"
+                    style="font-size: 11px; padding: 1px 4px; display: block; margin-bottom: 2px;"
+                    title="View Punch In GPS">
+              <span>📍 In: {{ a.in_latitude|floatformat:4 }}, {{ a.in_longitude|floatformat:4 }}</span>
+            </button>
+            {% endif %}
+            {% if a.out_latitude and a.out_longitude %}
+            <button type="button" 
+                    onclick="openGpsModal('Punch Out', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.out_time|time:'H:i:s' }}', '{{ a.out_latitude|default:'' }}', '{{ a.out_longitude|default:'' }}', '{{ a.out_location|escapejs }}', '{% if a.out_photo %}{{ a.out_photo.url }}{% endif %}')"
+                    class="btn-punch-time-click punch-out"
+                    style="font-size: 11px; padding: 1px 4px; display: block;"
+                    title="View Punch Out GPS">
+              <span>📍 Out: {{ a.out_latitude|floatformat:4 }}, {{ a.out_longitude|floatformat:4 }}</span>
+            </button>
+            {% endif %}
+            {% if not a.in_latitude and not a.out_latitude %}
+              {% if a.in_location %}
+              <small>{{ a.in_location }}</small>
+              {% else %}
+              <small style="color: var(--gray-500);">Location not recorded</small>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% if a.is_missing_punch_out %}
+            <span class="badge badge-danger" style="background:#fee2e2; color:#dc2626; font-weight:600; font-size:11px;">Incomplete</span>
+            {% else %}
+            <span class="badge badge-primary">{{ a.total_work_time }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.is_official_duty or a.update_source == 'Official Office Duty' or a.leave_type == 'Official Duty' %}
+            <span class="badge badge-success" style="background:#16a34a; color:#fff; font-weight:700;">Official Duty (Present)</span>
+            {% elif a.status == 'Permission - 2 Hours' or a.is_permission %}
+            <span class="badge badge-permission">Permission – 2 Hours</span>
+            {% elif a.status == 'Half Day' %}
+            <span class="badge badge-warning">Half Day</span>
+            {% elif a.status == 'Present' %}
+            <span class="badge badge-success">Present (Full Day)</span>
+            {% elif a.status == 'On Leave' %}
+            <span class="badge badge-primary">Approved Leave</span>
+            {% elif a.status == 'Missed Punch-In' %}
+            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">🔴 Missed Punch-In</span>
+            {% elif a.status == 'Missing Punch-Out' %}
+            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">🔴 Missing Punch-Out</span>
+            {% elif a.status == 'Absent' %}
+            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">Absent</span>
+            {% else %}
+            <span class="badge badge-danger" style="background:#dc2626; color:#fff; font-weight:700;">{{ a.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; color: #94a3b8; padding: 32px 20px;">
+            No attendance logs recorded yet. Punch in to start recording today's duty!
           </td>
         </tr>
         {% endfor %}

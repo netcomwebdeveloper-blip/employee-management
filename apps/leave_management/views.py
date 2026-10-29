@@ -143,9 +143,12 @@ def leave_list(request):
                 messages.error(request, "Invalid time range: To Time must be after From Time.")
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
-            # Minimum 30 minutes validation
+            # Minimum 30 minutes and maximum 2 hours validation
             if diff_mins < 30:
                 messages.error(request, "Permission limit: Minimum allowed duration is 30 minutes.")
+                return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
+            if diff_mins > 120:
+                messages.error(request, "Permission limit: Maximum allowed duration is 2 hours (120 minutes) per day.")
                 return redirect(request.META.get('HTTP_REFERER') or 'leave_management:list')
 
             # Validate date is not before employee's joining date
@@ -300,13 +303,13 @@ def leave_status_update(request, pk, status=None):
 
                 att, created = Attendance.objects.get_or_create(employee=leave.employee, date=leave.from_date)
                 att.is_permission = True
-                att.permission_hours = Decimal('2.00')
+                att.permission_hours = perm_hrs
                 att.updated_by = request.user
                 att.update_source = 'HR Approved Permission'
                 att.leave_reason = leave.reason
                 
                 # Recompute status with permission:
-                effective_mins = att.total_work_minutes + int(att.permission_hours * 60)
+                effective_mins = att.actual_work_minutes + int(perm_hrs * 60)
                 if effective_mins >= 540:
                     att.status = 'Present'
                 elif effective_mins >= 270:

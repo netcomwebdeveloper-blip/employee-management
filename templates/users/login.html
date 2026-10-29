@@ -7,172 +7,177 @@
   <title>Login | NETCOM Employee Management Portal</title>
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <style>
-    body {
-      background-color: #f1f5f9;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-container-wrapper {
-      width: 100%;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+    *, *::before, *::after {
       box-sizing: border-box;
     }
-    .login-split-card {
-      width: 100%;
-      max-width: 980px;
-      min-height: 600px;
-      background: #ffffff;
-      border-radius: 28px;
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
-      display: flex;
-      position: relative;
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
     }
-    /* Left Form Column */
-    .login-form-col {
-      flex: 1.05;
-      padding: 48px 46px;
+    .login-viewport {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ================= LEFT FORM PANEL ================= */
+    .login-left-panel {
+      flex: 1;
+      height: 100vh;
+      background: #ffffff;
+      position: relative;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      position: relative;
-      background: #ffffff;
-      z-index: 2;
+      align-items: center;
+      padding: 40px 32px;
+      overflow-y: auto;
     }
-    .login-dots-pattern {
+
+    /* Top Left Dotted Matrix Pattern */
+    .login-dots-matrix {
       position: absolute;
-      top: 24px;
-      left: 24px;
-      width: 80px;
-      height: 60px;
-      background-image: radial-gradient(#10b981 1.8px, transparent 1.8px);
-      background-size: 14px 14px;
-      opacity: 0.65;
+      top: 36px;
+      left: 40px;
+      display: grid;
+      grid-template-columns: repeat(5, 7px);
+      grid-gap: 16px;
       pointer-events: none;
       z-index: 1;
     }
-    .login-brand-header {
+    .login-dot {
+      width: 6.5px;
+      height: 6.5px;
+      background-color: #245743;
+      border-radius: 50%;
+      opacity: 0.85;
+    }
+
+    /* Centered Form Wrapper */
+    .login-form-box {
+      width: 100%;
+      max-width: 370px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
       position: relative;
       z-index: 2;
     }
-    .login-brand-img {
-      height: 44px;
-      max-width: 52px;
+
+    /* Netcom Brand Logo */
+    .login-brand-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .login-brand-logo img {
+      height: 72px;
+      width: auto;
       object-fit: contain;
     }
-    .login-brand-title {
-      font-size: 15px;
+
+    /* Typography */
+    .login-title {
+      font-size: 32px;
       font-weight: 800;
       color: #0f172a;
-      letter-spacing: -0.3px;
-      line-height: 1.25;
+      margin: 14px 0 6px 0;
+      letter-spacing: -0.6px;
+      text-align: center;
+      line-height: 1.2;
     }
-    .login-brand-subtitle {
-      font-size: 11px;
-      color: #64748b;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .login-heading {
-      font-size: 27px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.5px;
-      margin: 0 0 6px 0;
-    }
-    .login-subheading {
+    .login-subtitle {
       font-size: 13.5px;
       color: #64748b;
-      margin: 0 0 28px 0;
-      line-height: 1.5;
+      margin: 0 0 26px 0;
+      text-align: center;
     }
-    .form-group-login {
-      margin-bottom: 20px;
+
+    /* Input Fields */
+    .login-input-group {
+      width: 100%;
+      margin-bottom: 16px;
     }
-    .form-label-login {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 7px;
-    }
-    .form-input-login {
+    .login-input-field {
       width: 100%;
       padding: 13px 16px;
       border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       font-size: 14px;
-      color: #1e293b;
+      color: #0f172a;
       background: #ffffff;
-      box-sizing: border-box;
-      transition: all 0.2s ease;
       outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
     }
-    .form-input-login:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    .login-input-field::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
     }
-    .password-input-wrapper {
+    .login-input-field:focus {
+      border-color: #4338ca;
+      box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+    }
+    .password-field-wrapper {
       position: relative;
       width: 100%;
     }
-    .password-toggle-btn {
+    .password-visibility-btn {
       position: absolute;
-      right: 14px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
       background: none;
       border: none;
+      padding: 6px;
       cursor: pointer;
-      color: #94a3b8;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 4px;
-      transition: color 0.2s;
+      color: #94a3b8;
+      transition: color 0.15s ease;
     }
-    .password-toggle-btn:hover {
+    .password-visibility-btn:hover {
       color: #475569;
     }
-    .login-options-row {
+
+    /* Remember Me Row */
+    .login-remember-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      font-size: 13px;
+      margin-bottom: 22px;
+      width: 100%;
     }
-    .remember-me-label {
-      display: flex;
+    .remember-checkbox-label {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: #475569;
+      font-size: 13.5px;
+      color: #1e293b;
+      font-weight: 500;
       cursor: pointer;
       user-select: none;
     }
-    .remember-me-checkbox {
+    .remember-checkbox-input {
       width: 16px;
       height: 16px;
-      accent-color: #2563eb;
+      accent-color: #4338ca;
       cursor: pointer;
     }
-    .btn-login-submit {
+
+    /* Submit Button */
+    .btn-login-action {
       width: 100%;
-      padding: 13px;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      padding: 13.5px;
+      background: #4338ca;
       color: #ffffff;
       border: none;
       border-radius: 10px;
@@ -180,90 +185,180 @@
       font-weight: 700;
       letter-spacing: 0.2px;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 4px 14px rgba(67, 56, 202, 0.35);
       transition: all 0.2s ease;
+      font-family: inherit;
     }
-    .btn-login-submit:hover {
-      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    .btn-login-action:hover {
+      background: #3730a3;
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+      box-shadow: 0 6px 18px rgba(67, 56, 202, 0.42);
     }
-    .btn-login-submit:active {
+    .btn-login-action:active {
       transform: translateY(0);
     }
-    /* Right Illustration Column */
-    .login-illustration-col {
-      flex: 1.15;
-      background: #4f46e5;
+
+    /* Alerts */
+    .login-alert-box {
+      width: 100%;
+      margin-bottom: 18px;
+    }
+    .login-alert {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-radius: 8px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .login-alert-error, .login-alert-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #f87171;
+    }
+    .login-alert-success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .login-alert-info {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #7dd3fc;
+    }
+
+    /* ================= RIGHT ILLUSTRATION PANEL ================= */
+    .login-right-panel {
+      flex: 1;
+      height: 100vh;
+      background: #4338ca;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      padding: 36px;
     }
-    .login-illustration-img {
+    .login-illustration-card {
+      position: relative;
+      width: 100%;
+      max-width: 580px;
+      height: calc(100vh - 72px);
+      max-height: 840px;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+      background: #4338ca;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-illustration-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center;
       display: block;
     }
-    @media (max-width: 860px) {
-      .login-split-card {
+
+    /* ================= RESPONSIVE DESIGN ================= */
+    @media (max-width: 900px) {
+      html, body {
+        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+      }
+      .login-viewport {
         flex-direction: column;
-        max-width: 480px;
-        min-height: auto;
+        height: auto;
+        min-height: 100vh;
       }
-      .login-illustration-col {
-        height: 220px;
-        order: -1;
+      .login-right-panel {
+        display: none;
       }
-      .login-form-col {
-        padding: 36px 26px;
+      .login-left-panel {
+        height: auto;
+        min-height: 100vh;
+        padding: 56px 24px 40px 24px;
+      }
+      .login-dots-matrix {
+        top: 20px;
+        left: 20px;
+      }
+      .login-title {
+        font-size: 28px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="login-container-wrapper">
-    <div class="login-split-card">
-      
-      <!-- Left Column: Modern Sign-In Form Matching Image Mockup -->
-      <div class="login-form-col">
-        <div class="login-dots-pattern" aria-hidden="true"></div>
+  <div class="login-viewport login-split-card">
+    
+    <!-- LEFT PANEL: PURE HTML/CSS SIGN-IN FORM -->
+    <div class="login-left-panel">
+      <!-- Decorative Dotted Grid Pattern at Top Left -->
+      <div class="login-dots-matrix" aria-hidden="true">
+        <span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span>
+        <span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span>
+        <span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span>
+        <span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span><span class="login-dot"></span>
+      </div>
 
-        <div class="login-brand-header">
-          <img src="{% static 'images/netcom_brand_logo.png' %}" alt="Netcom Logo" class="login-brand-img">
-          <div>
-            <div class="login-brand-title">Netcom Computers</div>
-            <div class="login-brand-subtitle">Private Limited</div>
-          </div>
+      <div class="login-form-box">
+        <!-- Netcom Brand Logo -->
+        <div class="login-brand-logo">
+          <img src="{% static 'images/netcom_brand_logo.png' %}" alt="Netcom Computers">
         </div>
 
-        <h1 class="login-heading">Welcome Back</h1>
-        <p class="login-subheading">Welcome back! Please enter your details to sign in.</p>
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-subtitle">Please enter your details to sign in</p>
 
+        <!-- Django Flash Messages (Single-device session warning, logout, errors) -->
         {% if messages %}
-        <div class="alert-container" style="margin-bottom: 20px;">
+        <div class="login-alert-box">
           {% for message in messages %}
-          <div class="alert alert-{{ message.tags|default:'info' }}" style="padding: 10px 14px; font-size: 13px; border-radius: 8px;">
+          <div class="login-alert login-alert-{{ message.tags|default:'info' }}">
             <span>{{ message }}</span>
           </div>
           {% endfor %}
         </div>
         {% endif %}
 
-        <form method="POST" action="{% url 'login' %}">
+        <!-- Authentication Form Fully Integrated With Django Auth -->
+        <form method="POST" action="{% url 'login' %}" style="width: 100%;">
           {% csrf_token %}
-          <div class="form-group-login">
-            <label class="form-label-login" for="id_username">User Name</label>
-            <input type="text" name="username" id="id_username" class="form-input-login" placeholder="Enter your username" required autofocus autocomplete="username">
+          <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+          <!-- Username Input -->
+          <div class="login-input-group">
+            <input type="text" 
+                   name="username" 
+                   id="id_username" 
+                   class="login-input-field" 
+                   placeholder="User Name" 
+                   required 
+                   autofocus 
+                   autocomplete="username">
           </div>
 
-          <div class="form-group-login">
-            <label class="form-label-login" for="id_password">Password</label>
-            <div class="password-input-wrapper">
-              <input type="password" name="password" id="id_password" class="form-input-login" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 44px;">
-              <button type="button" class="password-toggle-btn" onclick="toggleLoginPassword()" title="Toggle password visibility" aria-label="Toggle password visibility">
+          <!-- Password Input with Toggle Visibility -->
+          <div class="login-input-group">
+            <div class="password-field-wrapper">
+              <input type="password" 
+                     name="password" 
+                     id="id_password" 
+                     class="login-input-field" 
+                     placeholder="Password" 
+                     required 
+                     autocomplete="current-password" 
+                     style="padding-right: 44px;">
+              <button type="button" 
+                      class="password-visibility-btn" 
+                      onclick="toggleLoginPassword()" 
+                      title="Toggle password visibility" 
+                      aria-label="Toggle password visibility">
                 <svg id="eyeIconSvg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
@@ -272,15 +367,16 @@
             </div>
           </div>
 
-          <div class="login-options-row">
-            <label class="remember-me-label">
-              <input type="checkbox" name="remember_me" class="remember-me-checkbox">
+          <!-- Remember Me Checkbox -->
+          <div class="login-remember-row">
+            <label class="remember-checkbox-label">
+              <input type="checkbox" name="remember_me" class="remember-checkbox-input">
               <span>Remember me</span>
             </label>
-            <span style="font-size: 12px; color: #94a3b8;">Protected by Netcom</span>
           </div>
 
-          <button type="submit" class="btn-login-submit">
+          <!-- Submit Button -->
+          <button type="submit" class="btn-login-action">
             Login
           </button>
         </form>
@@ -293,17 +389,19 @@
         </div>
         {% endif %}
       </div>
-
-      <!-- Right Column: Businesswoman Illustration Card Matching Image Mockup -->
-      <div class="login-illustration-col">
-        <img src="{% static 'images/login_illustration.png' %}" alt="Workforce Portal Illustration" class="login-illustration-img">
-      </div>
-
     </div>
+
+    <!-- RIGHT PANEL: ADJACENT VISUAL ILLUSTRATION ASSET -->
+    <div class="login-right-panel">
+      <div class="login-illustration-card">
+        <img src="{% static 'images/login_illustration.png' %}" alt="Workforce Management Illustration" class="login-illustration-asset">
+      </div>
+    </div>
+
   </div>
 
+  <!-- Corporate Notice Popup if Active -->
   {% if active_popup and active_popup.image %}
-  <!-- Login Announcement Popup Modal -->
   <div class="announcement-popup-overlay active" id="loginPopupModal">
     <div class="announcement-popup-card" style="{% if active_popup.popup_width %}max-width: {{ active_popup.popup_width }}; width: 100%;{% endif %}">
       <div class="announcement-popup-header">
@@ -340,6 +438,7 @@
   </script>
   {% endif %}
 
+  <!-- Password Visibility Toggle Script -->
   <script>
     function toggleLoginPassword() {
       const pwdInput = document.getElementById('id_password');

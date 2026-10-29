@@ -241,13 +241,13 @@ def correct_missing_punch_out(employee, att_date, verified_out_time, reason, hr_
     att.update_source = 'HR Manual Punch-Out Correction'
 
     # Compute working hours
-    mins = att.total_work_minutes
+    mins = att.total_calculated_minutes
     if mins >= 540:
         att.status = 'Present'
     elif mins >= 270:
         att.status = 'Half Day'
     else:
-        att.status = 'Present'
+        att.status = 'Absent'
 
     att.save()
 
