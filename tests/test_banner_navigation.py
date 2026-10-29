@@ -28,17 +28,13 @@ class BannerAndNavigationTests(TestCase):
         )
         self.client.login(username="emp_tester", password="testpassword123")
 
-    def test_top_navigation_bar_rendered_for_logged_in_employee(self):
-        """Top navigation bar must render the 4 required pills: Employee Dashboard, HR Support, Leave Management, Profile."""
+    def test_top_navigation_bar_removed(self):
+        """Verify the redundant top pill navigation bar has been removed as requested."""
         resp = self.client.get(reverse('dashboard:index'))
         self.assertEqual(resp.status_code, 200)
         html = resp.content.decode('utf-8')
 
-        self.assertIn('class="employee-top-nav-bar"', html)
-        self.assertIn('Employee Dashboard', html)
-        self.assertIn('HR Support', html)
-        self.assertIn('Leave Management', html)
-        self.assertIn('Profile', html)
+        self.assertNotIn('class="employee-top-nav-bar"', html)
 
     def test_employee_dashboard_banner_dynamic_details(self):
         """Employee Dashboard banner must display dynamic name, Staff ID, Role, glow badge, and background."""

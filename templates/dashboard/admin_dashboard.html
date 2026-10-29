@@ -568,16 +568,54 @@
               {% endif %}
             </div>
           </td>
-          <td>
-            {% if att.in_latitude and att.in_longitude %}
-            <a href="https://www.google.com/maps?q={{ att.in_latitude }},{{ att.in_longitude }}" target="_blank" style="text-decoration: none; font-size: 12px; color: var(--primary);">
-              📍 {{ att.in_latitude|floatformat:4 }}, {{ att.in_longitude|floatformat:4 }}
-            </a>
-            {% elif att.in_location %}
-            <small>{{ att.in_location }}</small>
-            {% else %}
-            <small style="color: var(--gray-600);">-</small>
-            {% endif %}
+          <td style="min-width: 170px;">
+            <!-- Punch In Location -->
+            <div style="margin-bottom: 5px;">
+              <span style="font-size: 10px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.3px; display: block;">📍 In Location:</span>
+              {% if att.in_latitude and att.in_longitude %}
+              <button type="button" 
+                      onclick="openGpsModal('Punch In', '{{ att.employee.employee_code }}', '{{ att.employee.display_name|escapejs }}', '{{ att.date|date:'Y-m-d' }}', '{{ att.in_time|time:'H:i:s' }}', '{{ att.in_latitude|default:'' }}', '{{ att.in_longitude|default:'' }}', '{{ att.in_location|escapejs }}', '{% if att.in_photo %}{{ att.in_photo.url }}{% endif %}')"
+                      class="btn-punch-time-click punch-in"
+                      style="font-size: 11px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;"
+                      title="View Punch In GPS">
+                <span>{{ att.in_latitude|floatformat:4 }}, {{ att.in_longitude|floatformat:4 }}</span>
+                {% if att.in_location and att.in_location != att.in_latitude|stringformat:"s" %}
+                <small style="color: #475569; font-weight: 400;">({{ att.in_location|truncatechars:15 }})</small>
+                {% endif %}
+              </button>
+              {% elif att.in_location %}
+              <small style="color: #1e293b; font-weight: 600;">{{ att.in_location }}</small>
+              {% elif att.in_time %}
+              <small style="color: var(--gray-500); font-style: italic;">Location not recorded</small>
+              {% else %}
+              <small style="color: var(--gray-400);">-</small>
+              {% endif %}
+            </div>
+
+            <!-- Punch Out Location -->
+            <div>
+              <span style="font-size: 10px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.3px; display: block;">📍 Out Location:</span>
+              {% if att.out_latitude and att.out_longitude %}
+              <button type="button" 
+                      onclick="openGpsModal('Punch Out', '{{ att.employee.employee_code }}', '{{ att.employee.display_name|escapejs }}', '{{ att.date|date:'Y-m-d' }}', '{{ att.out_time|time:'H:i:s' }}', '{{ att.out_latitude|default:'' }}', '{{ att.out_longitude|default:'' }}', '{{ att.out_location|escapejs }}', '{% if att.out_photo %}{{ att.out_photo.url }}{% endif %}')"
+                      class="btn-punch-time-click punch-out"
+                      style="font-size: 11px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;"
+                      title="View Punch Out GPS">
+                <span>{{ att.out_latitude|floatformat:4 }}, {{ att.out_longitude|floatformat:4 }}</span>
+                {% if att.out_location and att.out_location != att.out_latitude|stringformat:"s" %}
+                <small style="color: #475569; font-weight: 400;">({{ att.out_location|truncatechars:15 }})</small>
+                {% endif %}
+              </button>
+              {% elif att.out_location %}
+              <small style="color: #1e293b; font-weight: 600;">{{ att.out_location }}</small>
+              {% elif att.out_time %}
+              <small style="color: var(--gray-500); font-style: italic;">Location not recorded</small>
+              {% elif att.in_time %}
+              <small style="color: #b91c1c; font-size: 10px; font-weight: 600;">Pending Punch-Out</small>
+              {% else %}
+              <small style="color: var(--gray-400);">-</small>
+              {% endif %}
+            </div>
           </td>
           <td>
             {% if att.status == 'Official Duty' or att.is_official_duty %}

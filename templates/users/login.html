@@ -236,7 +236,7 @@
     .login-right-panel {
       flex: 1;
       height: 100vh;
-      background: #4338ca;
+      background: linear-gradient(180deg, #4438ca 0%, #31289c 100%);
       position: relative;
       display: flex;
       align-items: center;
@@ -253,17 +253,60 @@
       border-radius: 28px;
       overflow: hidden;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-      background: #4338ca;
+      background: #3e35b7;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       display: flex;
-      align-items: center;
-      justify-content: center;
     }
-    .login-illustration-card img {
+    .login-hero-text-box {
+      position: absolute;
+      top: 48px;
+      left: 42px;
+      z-index: 5;
+      max-width: 250px;
+    }
+    .login-hero-heading {
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      margin: 0;
+      font-family: inherit;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+    .login-woman-asset-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+    .login-woman-asset {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
+      object-position: 78% bottom;
       display: block;
+      pointer-events: none;
+    }
+    .login-floating-badge {
+      position: absolute;
+      bottom: 28px;
+      left: 28px;
+      width: 58px;
+      height: 58px;
+      background: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+      z-index: 6;
     }
 
     /* ================= RESPONSIVE DESIGN ================= */
@@ -280,15 +323,37 @@
         width: 100%;
       }
       .login-right-panel {
-        height: 240px;
+        height: 250px;
         padding: 16px;
         order: -1;
         flex: none;
       }
       .login-illustration-card {
         height: 100%;
-        max-height: 208px;
+        max-height: 218px;
         border-radius: 18px;
+      }
+      .login-hero-text-box {
+        top: 18px;
+        left: 18px;
+        max-width: 160px;
+      }
+      .login-hero-heading {
+        font-size: 18px;
+        line-height: 1.2;
+      }
+      .login-woman-asset {
+        object-position: right bottom;
+      }
+      .login-floating-badge {
+        bottom: 12px;
+        left: 12px;
+        width: 38px;
+        height: 38px;
+      }
+      .login-floating-badge svg {
+        width: 18px;
+        height: 18px;
       }
       .login-left-panel {
         height: auto;
@@ -406,10 +471,31 @@
       </div>
     </div>
 
-    <!-- RIGHT PANEL: ADJACENT VISUAL ILLUSTRATION ASSET -->
+    <!-- RIGHT PANEL: HERO TEXT + LOCAL WOMAN IMAGE + BADGE -->
     <div class="login-right-panel">
       <div class="login-illustration-card">
-        <img src="{% static 'images/login_illustration.png' %}" alt="Workforce Management Illustration" class="login-illustration-asset">
+        <!-- Pure HTML Text Heading -->
+        <div class="login-hero-text-box">
+          <h2 class="login-hero-heading">
+            Very good<br>
+            works are<br>
+            waiting for<br>
+            you Login<br>
+            Now!!!
+          </h2>
+        </div>
+
+        <!-- Woman Image from Local File -->
+        <div class="login-woman-asset-wrap">
+          <img src="{% static 'images/login page women image.png' %}" alt="Staff member" class="login-woman-asset">
+        </div>
+
+        <!-- Floating Circular Badge with Lightning Bolt -->
+        <div class="login-floating-badge" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#facc15" stroke="#ca8a04" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
     </div>
 

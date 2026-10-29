@@ -448,32 +448,54 @@
             <small style="color: var(--gray-600);">-</small>
             {% endif %}
           </td>
-          <td>
-            {% if a.in_latitude and a.in_longitude %}
-            <button type="button" 
-                    onclick="openGpsModal('Punch In', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.in_time|time:'H:i:s' }}', '{{ a.in_latitude|default:'' }}', '{{ a.in_longitude|default:'' }}', '{{ a.in_location|escapejs }}', '{% if a.in_photo %}{{ a.in_photo.url }}{% endif %}')"
-                    class="btn-punch-time-click punch-in"
-                    style="font-size: 11px; padding: 1px 4px; display: block; margin-bottom: 2px;"
-                    title="View Punch In GPS">
-              <span>📍 In: {{ a.in_latitude|floatformat:4 }}, {{ a.in_longitude|floatformat:4 }}</span>
-            </button>
-            {% endif %}
-            {% if a.out_latitude and a.out_longitude %}
-            <button type="button" 
-                    onclick="openGpsModal('Punch Out', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.out_time|time:'H:i:s' }}', '{{ a.out_latitude|default:'' }}', '{{ a.out_longitude|default:'' }}', '{{ a.out_location|escapejs }}', '{% if a.out_photo %}{{ a.out_photo.url }}{% endif %}')"
-                    class="btn-punch-time-click punch-out"
-                    style="font-size: 11px; padding: 1px 4px; display: block;"
-                    title="View Punch Out GPS">
-              <span>📍 Out: {{ a.out_latitude|floatformat:4 }}, {{ a.out_longitude|floatformat:4 }}</span>
-            </button>
-            {% endif %}
-            {% if not a.in_latitude and not a.out_latitude %}
-              {% if a.in_location %}
-              <small>{{ a.in_location }}</small>
+          <td style="min-width: 170px;">
+            <!-- Punch In Location -->
+            <div style="margin-bottom: 5px;">
+              <span style="font-size: 10px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.3px; display: block;">📍 In Location:</span>
+              {% if a.in_latitude and a.in_longitude %}
+              <button type="button" 
+                      onclick="openGpsModal('Punch In', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.in_time|time:'H:i:s' }}', '{{ a.in_latitude|default:'' }}', '{{ a.in_longitude|default:'' }}', '{{ a.in_location|escapejs }}', '{% if a.in_photo %}{{ a.in_photo.url }}{% endif %}')"
+                      class="btn-punch-time-click punch-in"
+                      style="font-size: 11px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;"
+                      title="View Punch In GPS">
+                <span>{{ a.in_latitude|floatformat:4 }}, {{ a.in_longitude|floatformat:4 }}</span>
+                {% if a.in_location and a.in_location != a.in_latitude|stringformat:"s" %}
+                <small style="color: #475569; font-weight: 400;">({{ a.in_location|truncatechars:15 }})</small>
+                {% endif %}
+              </button>
+              {% elif a.in_location %}
+              <small style="color: #1e293b; font-weight: 600;">{{ a.in_location }}</small>
+              {% elif a.in_time %}
+              <small style="color: var(--gray-500); font-style: italic;">Location not recorded</small>
               {% else %}
-              <small style="color: var(--gray-500);">Location not recorded</small>
+              <small style="color: var(--gray-400);">-</small>
               {% endif %}
-            {% endif %}
+            </div>
+
+            <!-- Punch Out Location -->
+            <div>
+              <span style="font-size: 10px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.3px; display: block;">📍 Out Location:</span>
+              {% if a.out_latitude and a.out_longitude %}
+              <button type="button" 
+                      onclick="openGpsModal('Punch Out', '{{ profile.employee_code }}', '{{ profile.display_name|escapejs }}', '{{ a.date|date:'Y-m-d' }}', '{{ a.out_time|time:'H:i:s' }}', '{{ a.out_latitude|default:'' }}', '{{ a.out_longitude|default:'' }}', '{{ a.out_location|escapejs }}', '{% if a.out_photo %}{{ a.out_photo.url }}{% endif %}')"
+                      class="btn-punch-time-click punch-out"
+                      style="font-size: 11px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;"
+                      title="View Punch Out GPS">
+                <span>{{ a.out_latitude|floatformat:4 }}, {{ a.out_longitude|floatformat:4 }}</span>
+                {% if a.out_location and a.out_location != a.out_latitude|stringformat:"s" %}
+                <small style="color: #475569; font-weight: 400;">({{ a.out_location|truncatechars:15 }})</small>
+                {% endif %}
+              </button>
+              {% elif a.out_location %}
+              <small style="color: #1e293b; font-weight: 600;">{{ a.out_location }}</small>
+              {% elif a.out_time %}
+              <small style="color: var(--gray-500); font-style: italic;">Location not recorded</small>
+              {% elif a.in_time %}
+              <small style="color: #b91c1c; font-size: 10px; font-weight: 600;">Pending Punch-Out</small>
+              {% else %}
+              <small style="color: var(--gray-400);">-</small>
+              {% endif %}
+            </div>
           </td>
           <td>
             {% if a.is_missing_punch_out %}

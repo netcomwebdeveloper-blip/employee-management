@@ -600,7 +600,7 @@ class AttendanceAndMessagingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Welcome Back')
         self.assertContains(response, 'login-split-card')
-        self.assertContains(response, 'login_illustration.png')
+        self.assertContains(response, 'login%20page%20women%20image.png')
         self.assertContains(response, 'netcom_brand_logo.png')
         self.assertContains(response, 'Remember me')
 
@@ -986,6 +986,6 @@ class AttendanceCalculationAndLoginUpgradeTests(TestCase):
         # Viewport styles
         self.assertContains(resp, 'width: 100vw')
         self.assertContains(resp, 'height: 100vh')
-        # Illustration PNG referenced as adjacent asset
-        self.assertContains(resp, 'login_illustration.png')
+        # Woman illustration PNG referenced as adjacent asset
+        self.assertContains(resp, 'login%20page%20women%20image.png')
         self.assertContains(resp, 'login-right-panel')
