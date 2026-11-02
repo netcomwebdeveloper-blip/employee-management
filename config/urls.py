@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic.base import RedirectView
 from django.views.static import serve
 from apps.users import views as user_views
 
@@ -16,10 +18,12 @@ def safe_serve_media(request, path, document_root=None, show_indexes=False):
             'path': path,
             'filename': os.path.basename(path)
         }, status=404)
-    from django.views.static import serve
     return serve(request, path, document_root=root, show_indexes=show_indexes)
 
 urlpatterns = [
+    # Favicon support
+    path('favicon.ico', RedirectView.as_view(url='/static/images/netcom_logo.png', permanent=True)),
+
     # Django Administration Backend
     path('django-admin/', admin.site.urls),
 
@@ -44,4 +48,5 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
