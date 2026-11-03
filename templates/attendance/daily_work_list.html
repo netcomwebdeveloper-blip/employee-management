@@ -64,22 +64,45 @@
         {{ form.status }}
       </div>
 
-      <!-- Drag & Drop Style Photo Upload Box -->
+      <!-- Drag & Drop / Mobile-Friendly Screenshot Upload Box -->
       <div class="form-group" style="margin-bottom: 22px;">
-        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">Attach Activity Photo / Site Verification Image</label>
+        <label class="form-label" style="font-weight: 600; color: #334155; margin-bottom: 6px;">
+          Attach Activity Screenshot / Verification Photo
+        </label>
         
-        <div class="modern-dropzone" onclick="document.getElementById('id_work_image').click();" id="dropZoneContainer">
-          <div style="margin-bottom: 8px;">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <div class="modern-dropzone" id="dropZoneContainer" style="cursor: pointer; border: 2px dashed #6366f1; border-radius: 12px; padding: 24px 16px; text-align: center; background: #f8fafc; transition: all 0.2s ease;">
+          <div style="margin-bottom: 10px;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           </div>
-          <div style="font-size: 13.5px; font-weight: 600; color: #334155;">Drop project screenshots or site photos here</div>
-          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">or click to browse from device (JPG, PNG, WEBP max 5MB)</div>
+          <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+            Drag &amp; drop screenshot here, or tap to choose file
+          </div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 14px;">
+            Supports JPG, JPEG, PNG, WEBP, GIF, BMP (Max: 10MB)
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="btnBrowseFile" style="pointer-events: auto; background: #ffffff; border-color: #6366f1; color: #4338ca; font-weight: 600; padding: 7px 18px; border-radius: 8px;">
+            📷 Select Screenshot File
+          </button>
         </div>
 
-        <div style="display: none;">
+        <!-- Hidden Native File Input -->
+        <div style="position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px; overflow: hidden;">
           {{ form.work_image }}
         </div>
-        <img id="workImagePreview" class="work-image-preview-box" alt="Activity Preview" style="margin-top: 12px; border-radius: 8px;">
+
+        <!-- Live File Selection & Preview Badge Card -->
+        <div id="fileSelectedCard" style="display: none; margin-top: 12px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+            <img id="workImagePreview" src="" alt="Screenshot Preview" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid #86efac; flex-shrink: 0; display: none;">
+            <div style="min-width: 0; overflow: hidden;">
+              <div id="selectedFileName" style="font-size: 13px; font-weight: 700; color: #166534; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;"></div>
+              <div id="selectedFileSize" style="font-size: 11.5px; color: #15803d;"></div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-danger btn-sm" id="btnRemoveFile" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; flex-shrink: 0;" title="Remove this screenshot">
+            ✕ Remove
+          </button>
+        </div>
       </div>
 
       <!-- Action Buttons Row -->
@@ -131,11 +154,13 @@
         </p>
 
         {% if w.work_image %}
-        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; gap: 10px;">
-          <img src="{{ w.work_image.url }}" alt="Work Photo" class="work-thumb" onclick="openWorkImageModal('{{ w.work_image.url }}')" title="Click to view full image" style="border-radius: 6px;">
-          <span style="font-size: 12px; color: #64748b;">
-            📷 Activity Verification Image attached (<a href="{{ w.work_image.url }}" target="_blank" style="color: #4f46e5; font-weight: 600;">Open Original</a>)
-          </span>
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1; display: flex; align-items: center; gap: 12px;">
+          <img src="{{ w.work_image.url }}" alt="Screenshot Proof" class="work-thumb" onclick="openWorkImageModal('{{ w.work_image.url }}')" title="Click to view full screenshot" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+          <div style="font-size: 12px; color: #475569;">
+            <div style="font-weight: 700; color: #1e293b; margin-bottom: 2px;">📷 Screenshot Attachment</div>
+            <a href="javascript:void(0)" onclick="openWorkImageModal('{{ w.work_image.url }}')" style="color: #4f46e5; font-weight: 600; text-decoration: underline; margin-right: 8px;">View Full Screenshot</a>
+            • <a href="{{ w.work_image.url }}" target="_blank" style="color: #64748b;">Open Original ↗</a>
+          </div>
         </div>
         {% endif %}
       </div>
@@ -213,52 +238,130 @@
 
 {% block extra_scripts %}
 <script>
-  // Work image preview
-  const workImgInput = document.getElementById('id_work_image') || document.getElementById('workImageInput');
-  const workImgPreview = document.getElementById('workImagePreview');
+  // Robust Screenshot Attachment Handler for Desktop & Mobile
+  const workImgInput = document.getElementById('workImageInput') || document.getElementById('id_work_image');
   const dropZone = document.getElementById('dropZoneContainer');
+  const btnBrowse = document.getElementById('btnBrowseFile');
+  const previewImg = document.getElementById('workImagePreview');
+  const fileCard = document.getElementById('fileSelectedCard');
+  const fileNameEl = document.getElementById('selectedFileName');
+  const fileSizeEl = document.getElementById('selectedFileSize');
+  const btnRemove = document.getElementById('btnRemoveFile');
 
-  if (workImgInput && workImgPreview) {
+  function triggerFileInput() {
+    if (workImgInput) {
+      workImgInput.click();
+    }
+  }
+
+  if (dropZone) {
+    dropZone.addEventListener('click', function(e) {
+      if (e.target.id !== 'btnBrowseFile') {
+        triggerFileInput();
+      }
+    });
+  }
+  if (btnBrowse) {
+    btnBrowse.addEventListener('click', function(e) {
+      e.stopPropagation();
+      triggerFileInput();
+    });
+  }
+
+  function handleFileSelected(file) {
+    if (!file) return;
+
+    // Client-side format validation
+    const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!validExtensions.includes(ext)) {
+      alert("Unsupported image format '." + ext + "'. Please select a valid JPG, PNG, WEBP, GIF, or BMP image file.");
+      clearFileSelection();
+      return;
+    }
+
+    // Client-side size validation (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("File size exceeds 10MB limit (" + (file.size / (1024*1024)).toFixed(1) + "MB). Please select a smaller screenshot.");
+      clearFileSelection();
+      return;
+    }
+
+    if (fileNameEl) fileNameEl.textContent = file.name;
+    if (fileSizeEl) fileSizeEl.textContent = (file.size / 1024).toFixed(1) + " KB • " + ext.toUpperCase();
+
+    if (previewImg) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+    if (fileCard) {
+      fileCard.style.display = 'flex';
+    }
+    if (dropZone) {
+      dropZone.style.borderColor = '#16a34a';
+      dropZone.style.background = '#f0fdf4';
+    }
+  }
+
+  function clearFileSelection() {
+    if (workImgInput) workImgInput.value = '';
+    if (previewImg) {
+      previewImg.src = '';
+      previewImg.style.display = 'none';
+    }
+    if (fileCard) fileCard.style.display = 'none';
+    if (dropZone) {
+      dropZone.style.borderColor = '#6366f1';
+      dropZone.style.background = '#f8fafc';
+    }
+  }
+
+  if (btnRemove) {
+    btnRemove.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      clearFileSelection();
+    });
+  }
+
+  if (workImgInput) {
     workImgInput.addEventListener('change', function() {
-      const file = this.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          workImgPreview.src = e.target.result;
-          workImgPreview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+      if (this.files && this.files[0]) {
+        handleFileSelected(this.files[0]);
       } else {
-        workImgPreview.style.display = 'none';
+        clearFileSelection();
       }
     });
   }
 
-  // Drag and drop handling on dropZone
-  if (dropZone && workImgInput) {
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
+  // Drag and drop handlers
+  if (dropZone) {
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, function(e) {
         e.preventDefault();
-        dropZone.style.borderColor = '#4f46e5';
+        dropZone.style.borderColor = '#4338ca';
         dropZone.style.background = '#eef2ff';
       }, false);
     });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, (e) => {
+    ['dragleave', 'drop'].forEach(name => {
+      dropZone.addEventListener(name, function(e) {
         e.preventDefault();
-        dropZone.style.borderColor = '#cbd5e1';
-        dropZone.style.background = '#f8fafc';
+        if (!workImgInput || !workImgInput.files || !workImgInput.files.length) {
+          dropZone.style.borderColor = '#6366f1';
+          dropZone.style.background = '#f8fafc';
+        }
       }, false);
     });
-
-    dropZone.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const files = dt.files;
-      if (files.length) {
+    dropZone.addEventListener('drop', function(e) {
+      const files = e.dataTransfer.files;
+      if (files && files.length) {
         workImgInput.files = files;
-        const event = new Event('change');
-        workImgInput.dispatchEvent(event);
+        handleFileSelected(files[0]);
       }
     }, false);
   }

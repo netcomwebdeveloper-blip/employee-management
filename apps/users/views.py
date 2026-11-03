@@ -23,6 +23,10 @@ def custom_login_view(request):
         if user is not None:
             if user.is_active:
                 login(request, user)
+                # Show popup only once when employee successfully logs in and enters dashboard
+                request.session['show_dashboard_popup'] = True
+                request.session['dashboard_popup_shown'] = False
+                request.session.modified = True
                 if not request.session.session_key:
                     request.session.save()
                 try:

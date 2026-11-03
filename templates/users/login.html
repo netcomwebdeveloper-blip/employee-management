@@ -487,7 +487,7 @@
 
         <!-- Woman Image from Local File -->
         <div class="login-woman-asset-wrap">
-          <img src="{% static 'images/login_page_women_image.png' %}" alt="Staff member" class="login-woman-asset">
+          <img src="{% static 'images/login page women image.png' %}" alt="Staff member" class="login-woman-asset">
         </div>
 
         <!-- Floating Circular Badge with Lightning Bolt -->
@@ -503,7 +503,7 @@
 
   <!-- Corporate Notice Popup if Active -->
   {% if active_popup and active_popup.image %}
-  <div class="announcement-popup-overlay active" id="loginPopupModal">
+  <div class="announcement-popup-overlay" id="loginPopupModal">
     <div class="announcement-popup-card" style="{% if active_popup.popup_width %}max-width: {{ active_popup.popup_width }}; width: 100%;{% endif %}">
       <div class="announcement-popup-header">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -557,6 +557,12 @@
         }
       }
     }
+  </script>
+  <script>
+    // Reset dashboard popup session indicator on login screen
+    try {
+      sessionStorage.removeItem('dashboard_popup_seen');
+    } catch (e) {}
   </script>
 </body>
 </html>

@@ -67,6 +67,23 @@ def get_or_create_employee_profile(user):
 
     return profile
 
+def should_display_dashboard_popup(request):
+    """
+    Determines whether the corporate announcement popup should display.
+    Rule:
+    - Shown ONLY upon successful login when entering the Dashboard for the first time.
+    - Not shown when navigating between other pages in the same session.
+    - Not shown when returning to the Dashboard in the same session.
+    - Resets only upon logout and a new successful login.
+    """
+    if request.session.get('show_dashboard_popup', False) and not request.session.get('dashboard_popup_shown', False):
+        request.session['dashboard_popup_shown'] = True
+        request.session['show_dashboard_popup'] = False
+        request.session.modified = True
+        return True
+    return False
+
+
 def build_employee_calendar(profile, year=None, month=None):
     today = timezone.localdate()
     try:
@@ -766,6 +783,7 @@ def admin_dashboard(request, profile):
         'calendar_permission_balance': get_or_create_monthly_permission_balance(calendar_employee, calendar_context['current_year'], calendar_context['current_month']),
     }
     context.update(calendar_context)
+    context['show_dashboard_popup'] = should_display_dashboard_popup(request)
     return render(request, 'dashboard/admin_dashboard.html', context)
 
 
@@ -1134,6 +1152,7 @@ def hr_dashboard(request, profile):
         'calendar_permission_balance': get_or_create_monthly_permission_balance(calendar_employee, calendar_context['current_year'], calendar_context['current_month']),
     }
     context.update(calendar_context)
+    context['show_dashboard_popup'] = should_display_dashboard_popup(request)
     return render(request, 'dashboard/hr_dashboard.html', context)
 
 
@@ -1233,6 +1252,7 @@ def employee_dashboard(request, profile):
         'permission_balance': get_or_create_monthly_permission_balance(profile, today.year, today.month),
     }
     context.update(build_employee_calendar(profile, year, month))
+    context['show_dashboard_popup'] = should_display_dashboard_popup(request)
     return render(request, 'dashboard/employee_dashboard.html', context)
 
 

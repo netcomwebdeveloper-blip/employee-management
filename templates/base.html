@@ -215,7 +215,7 @@
 
   {% if active_popup and active_popup.image %}
   <!-- Global Announcement Popup Modal (Displays on login & dashboards, persists on refresh) -->
-  <div class="announcement-popup-overlay active" id="globalAnnouncementModal">
+  <div class="announcement-popup-overlay {% if show_dashboard_popup %}active{% endif %}" id="globalAnnouncementModal">
     <div class="announcement-popup-card" style="{% if active_popup.popup_width %}max-width: {{ active_popup.popup_width }}; width: 100%;{% endif %}">
       <div class="announcement-popup-header">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -243,11 +243,36 @@
     function closeGlobalAnnouncementModal() {
       const modal = document.getElementById('globalAnnouncementModal');
       if (modal) modal.classList.remove('active');
+      try {
+        sessionStorage.setItem('dashboard_popup_seen', 'true');
+      } catch (e) {}
     }
     function openGlobalAnnouncementModal() {
       const modal = document.getElementById('globalAnnouncementModal');
       if (modal) modal.classList.add('active');
     }
+    document.addEventListener('DOMContentLoaded', function() {
+      const modal = document.getElementById('globalAnnouncementModal');
+      if (modal && modal.classList.contains('active')) {
+        try {
+          if (sessionStorage.getItem('dashboard_popup_seen') === 'true') {
+            modal.classList.remove('active');
+          } else {
+            sessionStorage.setItem('dashboard_popup_seen', 'true');
+          }
+        } catch (e) {}
+      }
+    });
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        const modal = document.getElementById('globalAnnouncementModal');
+        try {
+          if (modal && sessionStorage.getItem('dashboard_popup_seen') === 'true') {
+            modal.classList.remove('active');
+          }
+        } catch (e) {}
+      }
+    });
   </script>
   {% endif %}
 

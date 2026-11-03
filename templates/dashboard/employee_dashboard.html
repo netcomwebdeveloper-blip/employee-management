@@ -38,7 +38,7 @@
 
   {% if active_popup and active_popup.image %}
   <div style="position: absolute; top: 16px; right: 20px; z-index: 10;">
-    <button type="button" onclick="openAnnouncementPopup()" class="btn btn-outline btn-sm" style="background: rgba(255,255,255,0.92); color: #2563eb; border-color: #93c5fd; font-weight: 600; box-shadow: 0 2px 8px rgba(37,99,235,0.18); backdrop-filter: blur(4px);">
+    <button type="button" onclick="openGlobalAnnouncementModal()" class="btn btn-outline btn-sm" style="background: rgba(255,255,255,0.92); color: #2563eb; border-color: #93c5fd; font-weight: 600; box-shadow: 0 2px 8px rgba(37,99,235,0.18); backdrop-filter: blur(4px);">
       📢 Announcement
     </button>
   </div>
@@ -566,7 +566,7 @@
 
 <!-- ================= POPUP MODAL FOR EMPLOYEE LOGIN ================= -->
 {% if active_banner and active_banner.image %}
-<div class="modal-overlay" id="employeeAnnouncementModal">
+<div class="modal-overlay" id="employeeAnnouncementModal" style="display: none;">
   <div class="announcement-modal-dialog" style="{% if active_banner.banner_width and active_banner.banner_width != '100%' %}max-width: {{ active_banner.banner_width }};{% endif %}">
     <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0f172a); color: #fff;">
       <h3 style="color: #fff; font-size: 16px;">📢 {{ active_banner.title|default:"Company Announcement" }}</h3>
@@ -589,32 +589,26 @@
 
 {% block extra_scripts %}
 <script>
-  // 1. Automatic Announcement Popup Display on Every Refresh / Load
-  const bannerId = "{{ active_banner.id|default:'0' }}";
-  function checkAndShowAnnouncementPopup() {
-    {% if active_banner and active_banner.image %}
-    const modal = document.getElementById('employeeAnnouncementModal');
-    if (modal) {
-      modal.classList.add('active');
-    }
-    {% endif %}
-  }
-
+  // Forwarders for announcement modal
   function openAnnouncementPopup() {
     const modal = document.getElementById('employeeAnnouncementModal');
-    if (modal) modal.classList.add('active');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    } else if (typeof openGlobalAnnouncementModal === 'function') {
+      openGlobalAnnouncementModal();
+    }
   }
-
   function closeAnnouncementPopup() {
     const modal = document.getElementById('employeeAnnouncementModal');
     if (modal) {
       modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+    if (typeof closeGlobalAnnouncementModal === 'function') {
+      closeGlobalAnnouncementModal();
     }
   }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    checkAndShowAnnouncementPopup();
-  });
 
   // 2. Live Clock Display
   function updateEmpClock() {

@@ -24,6 +24,11 @@ class ManualAttendanceForm(forms.ModelForm):
 
 
 class DailyWorkForm(forms.ModelForm):
+    work_image = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*', 'id': 'workImageInput'})
+    )
+
     class Meta:
         model = DailyWork
         fields = ['project_name', 'work_details', 'status', 'is_offsite', 'location_notes', 'work_image']
@@ -35,6 +40,42 @@ class DailyWorkForm(forms.ModelForm):
             'location_notes': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Client Site, Branch Office, Field Visit'}),
             'work_image': forms.FileInput(attrs={'class': 'form-input', 'accept': 'image/*', 'id': 'workImageInput'}),
         }
+
+    def clean_work_image(self):
+        image = self.cleaned_data.get('work_image')
+        if not image:
+            return image
+
+        # 1. Size validation (max 10MB)
+        max_size_mb = 10
+        if image.size > max_size_mb * 1024 * 1024:
+            raise forms.ValidationError(
+                f"Attachment file size must be less than {max_size_mb}MB. Selected file size: {image.size / (1024 * 1024):.1f}MB."
+            )
+
+        # 2. Extension validation
+        import os
+        ext = os.path.splitext(image.name)[1].lower()
+        valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp')
+        if ext not in valid_extensions:
+            raise forms.ValidationError(
+                f"Unsupported image format '{ext}'. Supported formats: JPG, JPEG, PNG, WEBP, GIF, BMP."
+            )
+
+        # 3. Content inspection using PIL with stream reset
+        try:
+            from PIL import Image
+            if hasattr(image, 'seek'):
+                image.seek(0)
+            img = Image.open(image)
+            img.verify()
+        except Exception:
+            raise forms.ValidationError("The selected file is not a valid or readable image. Please select a valid PNG, JPG, JPEG, WEBP, GIF, or BMP image.")
+        finally:
+            if hasattr(image, 'seek'):
+                image.seek(0)
+
+        return image
 
 
 

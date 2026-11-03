@@ -372,6 +372,10 @@ def device_manage(request):
 @login_required
 def daily_work_list(request):
     profile = getattr(request.user, 'employee', None)
+    if not profile:
+        from apps.dashboard.views import get_or_create_employee_profile
+        profile = get_or_create_employee_profile(request.user)
+
     is_management = profile and profile.role in ('ADMIN', 'HR')
 
     if is_management:
@@ -387,12 +391,18 @@ def daily_work_list(request):
             work.employee = profile
             work.date = timezone.localdate()
             work.save()
-            messages.success(request, "Daily task report with attachment submitted successfully.")
+            if work.work_image:
+                import os
+                img_name = os.path.basename(work.work_image.name)
+                messages.success(request, f"Daily work report and screenshot '{img_name}' uploaded successfully.")
+            else:
+                messages.success(request, "Daily work report submitted successfully.")
             return redirect('attendance:daily_work')
         else:
-            for err_list in form.errors.values():
+            for field, err_list in form.errors.items():
                 for err in err_list:
-                    messages.error(request, err)
+                    label = "Screenshot / Image" if field == 'work_image' else field.replace('_', ' ').capitalize()
+                    messages.error(request, f"{label}: {err}")
 
     my_work_plans = DailyWorkPlan.objects.filter(employee=profile).order_by('-work_date', '-created_at') if profile else []
 
